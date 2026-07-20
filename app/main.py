@@ -165,6 +165,27 @@ async def index(
     )
 
 
+@app.get("/map", response_class=HTMLResponse)
+async def map_view(request: Request, config: ConfigDep) -> HTMLResponse:
+    """Kartenansicht: Angebote als Marker plus TUM-Campus-Marker.
+
+    Die Marker-Daten holt sich die Seite per JSON von ``/api/listings`` (dieselbe
+    Filterung wie die Tabelle); hier werden nur die Campus-Koordinaten aus der
+    Config an das Template übergeben.
+    """
+    primary = config.tum_campus.primary
+    secondary = config.tum_campus.secondary
+    campus = [{"label": primary.label, "lat": primary.lat, "lon": primary.lon}]
+    if secondary and secondary.enabled and secondary.lat and secondary.lon:
+        campus.append({"label": secondary.label, "lat": secondary.lat, "lon": secondary.lon})
+
+    return templates.TemplateResponse(
+        request=request,
+        name="map.html",
+        context={"campus_points": campus},
+    )
+
+
 @app.get("/partials/listings", response_class=HTMLResponse)
 async def listings_partial(
     request: Request,

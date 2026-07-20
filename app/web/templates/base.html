@@ -16,6 +16,10 @@
       <span class="subtitle">München → TUM Garching</span>
     </h1>
     <div class="topbar-actions">
+      <nav class="viewnav">
+        <a href="/" class="{% block nav_table %}{% endblock %}">Tabelle</a>
+        <a href="/map" class="{% block nav_map %}{% endblock %}">Karte</a>
+      </nav>
       {% if new_since_visit %}
         <span class="badge badge-new" title="Neue Angebote seit deinem letzten Besuch">
           {{ new_since_visit }} neu

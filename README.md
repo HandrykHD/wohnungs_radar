@@ -20,13 +20,18 @@ neuen passenden Treffern benachrichtigt. Alles läuft auf dem eigenen Laptop
 | **M1** | WG-Gesucht-Adapter (WG-Zimmer + Wohnungen), Scheduler, Dedup | ✅ fertig |
 | **M2** | Geocoding, Fuß-/Rad-Schätzung, ÖPNV zur TUM, POIs, Scoring | ✅ fertig |
 | **M3** | Browser- & Desktop-Benachrichtigungen bei neuen Treffern | ✅ fertig |
-| M4 | Weitere Quellen, Filter, Kartenansicht | geplant |
+| **M4** | Kleinanzeigen-Adapter, Filter, Leaflet-Kartenansicht | ✅ fertig |
 | M5 | ÖPNV-Feinschliff & Auto-Start | geplant |
 
-Aktiv ist der **WG-Gesucht-Adapter**; jedes neue Angebot wird im Hintergrund
-angereichert (Koordinaten, Fuß-/Rad-/ÖPNV-Zeit zur TUM Garching, Umgebungs-POIs,
-Score). Der Dummy-Adapter bleibt für Entwicklung/Tests verfügbar (in
-`config.yaml` umschaltbar).
+Aktiv sind die Adapter **WG-Gesucht** und **Kleinanzeigen**; jedes neue Angebot
+wird im Hintergrund angereichert (Koordinaten, Fuß-/Rad-/ÖPNV-Zeit zur TUM
+Garching, Umgebungs-POIs, Score). **ImmoScout24** wird bewusst **nicht** gescrapt
+(harte Akamai-Bot-Wall, HTTP 401 — Details und der legale API-Weg in
+`DATA_SOURCES.md`). Der Dummy-Adapter bleibt für Entwicklung/Tests verfügbar.
+
+Es gibt zwei Ansichten (oben umschaltbar): die **Tabelle** (sortier-/filterbar)
+und die **Karte** (Leaflet) mit allen geocodierten Angeboten — farbcodiert nach
+Score — und dem TUM-Campus-Marker.
 
 **Ablauf eines Laufs:** Der Scheduler sammelt alle 15 min neue Angebote und
 reichert danach einen Schwung (`enrichment.max_per_run`, Default 20) an. Die
@@ -112,8 +117,13 @@ python3 -m venv .venv
 
 ## Bedienung
 
+- **Ansicht Tabelle / Karte** — oben rechts umschaltbar.
 - **Tabelle:** sortier- und filterbar (Miete, Größe, Stadtteile, ÖPNV-Zeit, Typ).
   Filter greifen sofort, ohne Seiten-Neuladen (HTMX).
+- **Karte:** alle geocodierten Angebote als Marker (Farbe = Score) plus
+  TUM-Campus. Klick auf einen Marker zeigt Eckdaten und den Portal-Link. Die
+  Kartenkacheln kommen von OpenStreetMap (benötigen Internet); die Leaflet-Lib
+  selbst liegt lokal.
 - **☆ / ★** — Favorit an/aus.
 - **✕** — Angebot ausblenden (über „Ausgeblendete zeigen" wieder sichtbar).
 - **↗** — Angebot im Portal öffnen.
@@ -230,7 +240,7 @@ app/
 ├── queries.py         Filter- und Sortierlogik (geteilt: Web/API/Notify)
 ├── scheduler.py       APScheduler-Job, Online-Check, Sammel-Lauf
 ├── logging_setup.py   Konsole + rotierende Logdatei
-├── sources/           Portal-Adapter (base, dummy, wg_gesucht …)
+├── sources/           Portal-Adapter (base, dummy, wg_gesucht, kleinanzeigen)
 ├── enrich/            cache, geocode, routing, transit (MVG), pois, scoring, pipeline
 ├── notify/            base, browser (Queue), desktop (PowerShell-Toast), dispatch
 ├── notify/            Benachrichtigungen (ab M3)

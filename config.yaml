@@ -79,8 +79,8 @@ scoring_weights:
 sources:
   dummy: false              # Testadapter ohne Netzzugriff — nur für Entwicklung
   wg_gesucht: true          # aktiv seit M1 (öffentliche HTML-Suche, siehe DATA_SOURCES.md)
-  immoscout: false          # wird in M4 aktiviert (Akamai-Bot-Schutz)
-  kleinanzeigen: false      # wird in M4 aktiviert (Cloudflare-Bot-Schutz)
+  immoscout: false          # NICHT scrapebar: 401/Akamai-Bot-Wall. Legaler Weg = Partner-API (DATA_SOURCES.md)
+  kleinanzeigen: true       # aktiv seit M4 (öffentliche HTML-Suche mit ehrlichem UA)
 
 # -----------------------------------------------------------------------------
 # Scraping-Verhalten (höfliches Crawling)

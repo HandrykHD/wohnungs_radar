@@ -16,11 +16,11 @@ gelegentlich neu.
 
 ## Übersicht
 
-| Portal          | Offizielle API                         | `robots.txt` (Suchseiten) | AGB: Automatisierung | Bot-Schutz            | Empfehlung |
-|-----------------|----------------------------------------|---------------------------|----------------------|-----------------------|------------|
-| WG-Gesucht      | nein (nur interne, undokumentierte)    | erlaubt                   | untersagt            | moderat               | M1-Start   |
-| ImmoScout24     | ja (Partner-API, Zulassung nötig)      | erlaubt                   | untersagt            | hart (Akamai)         | API/Playwright |
-| Kleinanzeigen   | nein                                   | erlaubt (RSS gesperrt)    | untersagt            | hart (Cloudflare)     | vorsichtig |
+| Portal          | Offizielle API                         | `robots.txt` (Suchseiten) | AGB: Automatisierung | Bot-Schutz (verifiziert 20.07.2026) | Umsetzung |
+|-----------------|----------------------------------------|---------------------------|----------------------|-------------------------------------|-----------|
+| WG-Gesucht      | nein (nur interne, undokumentierte)    | erlaubt                   | untersagt            | moderat — httpx OK                  | **aktiv** (M1) |
+| ImmoScout24     | ja (Partner-API, Zulassung nötig)      | erlaubt                   | untersagt            | **hart — HTTP 401/Akamai**          | **nicht gescrapt** (nur API legal) |
+| Kleinanzeigen   | nein                                   | erlaubt (RSS gesperrt)    | untersagt            | zeitweise Cloudflare — hier httpx OK | **aktiv** (M4) |
 
 ---
 
@@ -58,11 +58,17 @@ gelegentlich neu.
   Bemerkenswert: `ClaudeBot`, `GPTBot` etc. sind **ausdrücklich erlaubt** — das
   betrifft aber nur diese benannten Bots, nicht einen eigenen Scraper.
 - **AGB:** Untersagen automatisiertes Auslesen ausdrücklich und mit Nachdruck.
-- **Bot-Schutz:** **Hart.** Akamai Bot Manager mit JS-/TLS-Fingerprinting. Ein
-  reiner `httpx`-Abruf wird zuverlässig geblockt. Realistisch nur mit
-  **Playwright (Chromium)** und selbst dann fragil.
-- **Empfehlung:** Zuerst Partner-API anfragen. Andernfalls Adapter in M4 mit
-  Playwright, sehr langsam, und mit der Bereitschaft, ihn wieder abzuschalten.
+- **Bot-Schutz:** **Hart — bestätigt.** Ein `httpx`-Abruf der Münchensuche
+  liefert **HTTP 401** mit Akamai-Bot-Markern (am 20.07.2026 geprüft). Ein
+  Umgehen wäre nur mit Playwright + Stealth-Tricks denkbar, also durch aktives
+  Überlisten der Bot-Erkennung.
+- **Entscheidung:** ImmoScout24 wird **nicht gescrapt.** Begründung: (1) die
+  AGB untersagen es und der Betreiber setzt es mit 401 aktiv durch — das ist eine
+  klare Ablehnung, die dieselbe Höflichkeitslogik wie ein 403 respektiert; (2)
+  Bot-Erkennung zu überlisten ist etwas anderes als bloßes Lesen einer offenen
+  Seite; (3) es wäre ohnehin fragil. Der **legale Weg ist die Partner-API**
+  (OAuth, Registrierung). Die Quelle bleibt in `config.yaml` deaktiviert; der
+  Registry-Platz ist frei, falls du einen API-Adapter ergänzt.
 
 ## 3. Kleinanzeigen (`kleinanzeigen`)
 
@@ -73,11 +79,19 @@ gelegentlich neu.
   **ausdrücklich der RSS-Feed** `Disallow: /s-feed.rss` — ein bequemer legaler
   Feed-Weg entfällt damit.
 - **AGB:** Untersagen automatisierten Zugriff und das systematische Auslesen.
-- **Bot-Schutz:** **Hart.** Cloudflare mit Managed Challenge. Wie bei IS24
-  praktisch nur über einen echten Browser (Playwright) erreichbar, und auch das
-  wird regelmäßig unterbrochen.
-- **Empfehlung:** In M4 mit Playwright, niedrige Frequenz. Viele private
-  Angebote ohne Makler, aber stark schwankende Datenqualität.
+- **Bot-Schutz:** Cloudflare mit gelegentlicher Managed Challenge. Am 20.07.2026
+  war die Münchensuche jedoch **mit dem ehrlichen Projekt-User-Agent** ohne
+  Challenge erreichbar (HTTP 200). Der Adapter nutzt daher `httpx` und **keinen**
+  gefälschten Browser-UA — es findet keine Umgehung statt. Sollte Cloudflare
+  wieder blocken (403/429/„Just a moment"), stoppt der `PoliteClient` und die
+  Quelle fällt bis zum nächsten Lauf aus.
+- **Datenqualität:** In der Listenansicht gibt es **keine** strukturierte
+  Wohnfläche/Zimmerzahl und keine Straße. Der Adapter zieht Zimmer/Größe — soweit
+  vorhanden — aus dem Titel und geocodiert über PLZ + Stadtteil (nur
+  stadtteil-genau). Gesuche werden über den `anzeige:angebote`-Filter und eine
+  Titel-Heuristik ausgesiebt.
+- **Umsetzung:** In M4 als `httpx`-Adapter aktiviert, niedrige Frequenz. Viele
+  private Angebote ohne Makler.
 
 ---
 

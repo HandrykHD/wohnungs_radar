@@ -55,6 +55,60 @@ body {
 .subtitle { color: var(--muted); font-weight: 400; margin-left: 0.5rem; font-size: 0.85rem; }
 .topbar-actions { display: flex; align-items: center; gap: 0.75rem; }
 
+/* --- Ansichts-Navigation (Tabelle/Karte) --- */
+.viewnav { display: flex; gap: 0.25rem; }
+.viewnav a {
+  padding: 0.3rem 0.7rem;
+  border-radius: 5px;
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 500;
+}
+.viewnav a:hover { color: var(--accent); }
+.viewnav a.active { background: var(--accent); color: #fff; }
+
+/* --- Karte --- */
+#map {
+  width: 100%;
+  /* Topbar ist ~3,1rem hoch; Karte füllt den Rest des Fensters. */
+  height: calc(100vh - 3.1rem - 2rem);
+  min-height: 400px;
+  z-index: 1;
+}
+
+.map-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+}
+.map-legend-title { color: var(--muted); margin-right: 0.2rem; }
+.legend-chip {
+  display: inline-block;
+  width: 1.6rem;
+  text-align: center;
+  border-radius: 3px;
+  color: #10241a;
+  font-weight: 600;
+  font-size: 0.72rem;
+}
+.legend-sep { color: var(--border); }
+.legend-tum { font-weight: 600; color: var(--accent); }
+
+/* Campus-Marker (Leaflet divIcon) */
+.campus-marker {
+  color: var(--accent);
+  font-size: 1.6rem;
+  line-height: 1;
+  text-shadow: 0 0 3px #fff, 0 0 3px #fff;
+  text-align: center;
+}
+/* Leaflet-Popups an das dunkle Theme angleichen */
+.leaflet-popup-content { font: inherit; }
+
 /* --- Filter --- */
 
 .filters {

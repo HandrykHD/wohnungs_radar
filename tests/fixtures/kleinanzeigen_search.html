@@ -1,0 +1,114 @@
+<!--
+  Synthetische Kleinanzeigen-Suchergebnisseite für Parser-Tests.
+
+  Struktur (article.aditem mit data-adid/data-href, Preis-, Standort-, Titel-
+  Knoten) entspricht dem am 20.07.2026 verifizierten echten Markup. Keine echten
+  Anzeigen/Personendaten. Enthaltene Randfälle:
+
+    * 2001: Normalfall Wohnung, Zimmerzahl im Titel, PLZ+Stadtteil.
+    * 2002: VB-Preis mit durchgestrichenem Zweitpreis (erste Zahl zählt);
+            Wohnfläche im Titel; Zero-Width-Space im Stadtteil.
+    * 2003: WG-Zimmer (Titel enthält "WG") → listing_type wg_room.
+    * 2004: Gesuch ("sucht Wohnung") → muss übersprungen werden.
+    * 2005: ohne Zimmer/Größe im Titel → Felder bleiben leer.
+-->
+<html><body>
+<ul id="srchrslt-adtable">
+
+  <article class="aditem" data-adid="2001"
+           data-href="/s-anzeige/schoene-2-zimmer-wohnung/2001-203-1">
+    <div class="aditem-main">
+      <div class="aditem-main--top">
+        <div class="aditem-main--top--left">
+          <i class="icon icon-pin-gray"></i> 80637 Neuhausen
+        </div>
+      </div>
+      <div class="aditem-main--middle">
+        <h2 class="text-module-begin">
+          <a class="ellipsis" href="/s-anzeige/schoene-2-zimmer-wohnung/2001-203-1">
+            Schöne 2-Zimmer-Wohnung in Neuhausen
+          </a>
+        </h2>
+        <p class="aditem-main--middle--price-shipping--price">1.150 €</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="aditem" data-adid="2002"
+           data-href="/s-anzeige/moeblierte-wohnung/2002-203-1">
+    <div class="aditem-main">
+      <div class="aditem-main--top">
+        <div class="aditem-main--top--left">
+          <i class="icon icon-pin-gray"></i> 81543 Untergiesing-​Harlaching
+        </div>
+      </div>
+      <div class="aditem-main--middle">
+        <h2 class="text-module-begin">
+          <a class="ellipsis" href="/s-anzeige/moeblierte-wohnung/2002-203-1">
+            Möblierte Wohnung 45 m² zur Zwischenmiete
+          </a>
+        </h2>
+        <p class="aditem-main--middle--price-shipping--price">1.450 € VB 1.600 €</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="aditem" data-adid="2003"
+           data-href="/s-anzeige/wg-zimmer-schwabing/2003-203-1">
+    <div class="aditem-main">
+      <div class="aditem-main--top">
+        <div class="aditem-main--top--left">
+          <i class="icon icon-pin-gray"></i> 80801 Schwabing-West
+        </div>
+      </div>
+      <div class="aditem-main--middle">
+        <h2 class="text-module-begin">
+          <a class="ellipsis" href="/s-anzeige/wg-zimmer-schwabing/2003-203-1">
+            WG-Zimmer mit Balkon in 3er-WG
+          </a>
+        </h2>
+        <p class="aditem-main--middle--price-shipping--price">720 €</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="aditem" data-adid="2004"
+           data-href="/s-anzeige/suche-wohnung/2004-203-1">
+    <div class="aditem-main">
+      <div class="aditem-main--top">
+        <div class="aditem-main--top--left">
+          <i class="icon icon-pin-gray"></i> 80333 München
+        </div>
+      </div>
+      <div class="aditem-main--middle">
+        <h2 class="text-module-begin">
+          <a class="ellipsis" href="/s-anzeige/suche-wohnung/2004-203-1">
+            Ruhiges Pärchen sucht 2-Zimmer-Wohnung
+          </a>
+        </h2>
+        <p class="aditem-main--middle--price-shipping--price">1.400 €</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="aditem" data-adid="2005"
+           data-href="/s-anzeige/helle-wohnung/2005-203-1">
+    <div class="aditem-main">
+      <div class="aditem-main--top">
+        <div class="aditem-main--top--left">
+          <i class="icon icon-pin-gray"></i> 80939 Freimann
+        </div>
+      </div>
+      <div class="aditem-main--middle">
+        <h2 class="text-module-begin">
+          <a class="ellipsis" href="/s-anzeige/helle-wohnung/2005-203-1">
+            Helle möblierte Wohnung mit Garten
+          </a>
+        </h2>
+        <p class="aditem-main--middle--price-shipping--price">980 €</p>
+      </div>
+    </div>
+  </article>
+
+</ul>
+</body></html>

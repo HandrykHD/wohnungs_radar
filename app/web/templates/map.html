@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block nav_map %}active{% endblock %}
+
+{% block title %}Karte — Wohnungs-Radar München{% endblock %}
+
+{% block content %}
+<!-- Leaflet liegt lokal; nur die Kartenkacheln kommen online von OpenStreetMap. -->
+<link rel="stylesheet" href="/static/leaflet/leaflet.css">
+<script src="/static/leaflet/leaflet.js"></script>
+
+<div id="map"></div>
+
+<div class="map-legend">
+  <span class="map-legend-title">Score</span>
+  <span class="legend-chip" style="background: hsl(0 65% 72%)">0</span>
+  <span class="legend-chip" style="background: hsl(60 65% 72%)">50</span>
+  <span class="legend-chip" style="background: hsl(120 65% 72%)">100</span>
+  <span class="legend-sep">·</span>
+  <span class="legend-tum">◆ TUM</span>
+  <span id="map-count" class="muted"></span>
+</div>
+
+<!-- Campus-Koordinaten aus der Config an das Skript übergeben. -->
+<script id="campus-data" type="application/json">{{ campus_points | tojson }}</script>
+<script src="/static/map.js" defer></script>
+{% endblock %}
