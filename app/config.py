@@ -128,6 +128,10 @@ class NotificationsConfig(BaseModel):
     telegram: bool = False
     min_score: float = 0.0
     max_per_run: int = 5
+    # Ein Heartbeat des offenen Fensters gilt bis zu so viele Sekunden als frisch.
+    # Ist er frisch UND die Seite sichtbar, geht die Meldung in den Browser, sonst
+    # als Desktop-Toast (der „Fallback, wenn das Fenster nicht im Vordergrund ist").
+    heartbeat_stale_seconds: int = 60
 
 
 class ServerConfig(BaseModel):

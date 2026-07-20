@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
@@ -18,6 +18,8 @@ from app.config import Config, get_config
 from app.db import count_new_since, get_session, get_state, init_engine, session_scope, set_state
 from app.logging_setup import setup_logging
 from app.models import Listing, ListingStatus, utcnow
+from app.notify.browser import drain_pending
+from app.notify.dispatch import record_heartbeat
 from app.queries import DEFAULT_SORT, ListingFilters, fetch_listings
 from app.scheduler import CollectorScheduler
 
@@ -255,6 +257,24 @@ async def api_collect() -> JSONResponse:
         raise HTTPException(status_code=503, detail="Scheduler noch nicht bereit")
     stats = await scheduler.trigger_now()
     return JSONResponse(stats)
+
+
+@app.post("/api/heartbeat", status_code=204)
+async def api_heartbeat(session: SessionDep, visible: bool = Query(True)) -> Response:
+    """Lebenszeichen des offenen Fensters (mit Sichtbarkeit).
+
+    Steuert die Kanalwahl: Bei frischem Heartbeat und sichtbarer Seite gehen neue
+    Treffer als Browser-Notification, sonst als Desktop-Toast.
+    """
+    record_heartbeat(session, visible)
+    session.commit()
+    return Response(status_code=204)
+
+
+@app.get("/api/notifications/pending")
+async def api_notifications_pending() -> JSONResponse:
+    """Wartende Browser-Benachrichtigungen abholen (vom Frontend gepollt)."""
+    return JSONResponse(drain_pending())
 
 
 @app.get("/health")

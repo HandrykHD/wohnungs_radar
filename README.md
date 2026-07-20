@@ -19,7 +19,7 @@ neuen passenden Treffern benachrichtigt. Alles läuft auf dem eigenen Laptop
 | **M0** | Gerüst: FastAPI, SQLite, Config, Dummy-Adapter, HTMX-Tabelle, Startskripte | ✅ fertig |
 | **M1** | WG-Gesucht-Adapter (WG-Zimmer + Wohnungen), Scheduler, Dedup | ✅ fertig |
 | **M2** | Geocoding, Fuß-/Rad-Schätzung, ÖPNV zur TUM, POIs, Scoring | ✅ fertig |
-| M3 | Browser- & Desktop-Benachrichtigungen | geplant |
+| **M3** | Browser- & Desktop-Benachrichtigungen bei neuen Treffern | ✅ fertig |
 | M4 | Weitere Quellen, Filter, Kartenansicht | geplant |
 | M5 | ÖPNV-Feinschliff & Auto-Start | geplant |
 
@@ -120,6 +120,23 @@ python3 -m venv .venv
 - **„Jetzt suchen"** — Sammel-Lauf sofort auslösen, statt aufs Intervall zu warten.
 - **Badge „N neu"** — so viele Angebote sind seit deinem letzten Besuch dazugekommen.
 
+### Benachrichtigungen
+
+Neue Angebote, die deine Filter erfüllen, werden gemeldet — **genau einmal** und
+über den passenden Kanal:
+
+- **Fenster offen & sichtbar** → Browser-Notification (Web Notifications API).
+  Beim ersten Klick ins Fenster fragt Chrome nach der Erlaubnis; ein Klick auf die
+  Meldung öffnet das Angebot im Portal.
+- **Fenster geschlossen/minimiert** → Windows-Toast (über `powershell.exe`), damit
+  du den Treffer auch mitbekommst, wenn der Radar nicht im Vordergrund ist.
+
+Das Backend erkennt den Zustand über einen Heartbeat des Fensters. **Kein
+Erststart-Schwall:** Beim ersten Lauf wird der vorhandene Bestand still als
+„gesehen" markiert; danach meldet die App nur echte Neuzugänge. Umfang und
+Schwellen (`min_score`, `max_per_run`, Kanäle) stehen in `config.yaml` unter
+`notifications`.
+
 ---
 
 ## Konfiguration
@@ -215,6 +232,7 @@ app/
 ├── logging_setup.py   Konsole + rotierende Logdatei
 ├── sources/           Portal-Adapter (base, dummy, wg_gesucht …)
 ├── enrich/            cache, geocode, routing, transit (MVG), pois, scoring, pipeline
+├── notify/            base, browser (Queue), desktop (PowerShell-Toast), dispatch
 ├── notify/            Benachrichtigungen (ab M3)
 └── web/               HTMX-Templates + statische Dateien
 config.yaml · .env.example · requirements*.txt · start.sh · start.ps1

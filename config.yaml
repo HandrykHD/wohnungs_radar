@@ -140,6 +140,7 @@ notifications:
   telegram: false                   # spätere Ausbaustufe, Token in .env
   min_score: 0                      # nur benachrichtigen ab diesem Score (0 = alle Treffer)
   max_per_run: 5                    # Schutz vor Benachrichtigungs-Lawinen beim ersten Lauf
+  heartbeat_stale_seconds: 60       # frischer Heartbeat + sichtbare Seite → Browser, sonst Desktop-Toast
 
 # -----------------------------------------------------------------------------
 # Server & Betrieb

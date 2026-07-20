@@ -13,6 +13,7 @@ from app.config import Config
 from app.db import session_scope, set_state, upsert_listing
 from app.enrich.pipeline import enrich_pending
 from app.models import Listing, utcnow
+from app.notify.dispatch import dispatch_notifications
 from app.sources import build_enabled_adapters
 from app.sources.base import run_adapter_safely
 
@@ -104,6 +105,21 @@ async def enrich_once(config: Config) -> dict[str, int]:
         return {"processed": 0, "deferred": 0}
 
 
+async def enrich_and_notify(config: Config) -> dict[str, int]:
+    """Anreichern und anschließend fällige Benachrichtigungen versenden.
+
+    Die Benachrichtigung kommt nach der Anreicherung, damit Filter (ÖPNV-Zeit) und
+    Score der Treffer bereits feststehen. Fehler im Versand bleiben folgenlos für
+    den Rest des Laufs.
+    """
+    stats = await enrich_once(config)
+    try:
+        await dispatch_notifications(config)
+    except Exception:
+        logger.exception("Benachrichtigungsphase mit unerwartetem Fehler abgebrochen")
+    return stats
+
+
 async def collect_once(config: Config) -> dict[str, int]:
     """Vollständiger Lauf für den Scheduler: erst sammeln, dann anreichern.
 
@@ -115,7 +131,7 @@ async def collect_once(config: Config) -> dict[str, int]:
     scrape = await scrape_only(config)
     enrich = {"processed": 0, "deferred": 0}
     if scrape.get("online"):
-        enrich = await enrich_once(config)
+        enrich = await enrich_and_notify(config)
 
     return {
         "fetched": scrape["fetched"],
@@ -177,7 +193,7 @@ class CollectorScheduler:
         stats = await scrape_only(self._config)
 
         if stats.get("online") and (self._enrich_task is None or self._enrich_task.done()):
-            self._enrich_task = asyncio.create_task(enrich_once(self._config))
+            self._enrich_task = asyncio.create_task(enrich_and_notify(self._config))
 
         return stats
 
