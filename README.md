@@ -21,7 +21,7 @@ neuen passenden Treffern benachrichtigt. Alles läuft auf dem eigenen Laptop
 | **M2** | Geocoding, Fuß-/Rad-Schätzung, ÖPNV zur TUM, POIs, Scoring | ✅ fertig |
 | **M3** | Browser- & Desktop-Benachrichtigungen bei neuen Treffern | ✅ fertig |
 | **M4** | Kleinanzeigen-Adapter, Filter, Leaflet-Kartenansicht | ✅ fertig |
-| M5 | ÖPNV-Feinschliff & Auto-Start | geplant |
+| **M5** | Auto-Start bei Anmeldung, Offline-Robustheit | ✅ fertig |
 
 Aktiv sind die Adapter **WG-Gesucht** und **Kleinanzeigen**; jedes neue Angebot
 wird im Hintergrund angereichert (Koordinaten, Fuß-/Rad-/ÖPNV-Zeit zur TUM
@@ -194,17 +194,19 @@ stehen kommentiert in `config.yaml` unter `geo` und `enrichment`.
 
 ## Auto-Start beim Login (Windows Task Scheduler)
 
-Wird in **M5** finalisiert. Grundprinzip:
+Einmal in PowerShell (im Projektordner) ausführen:
 
-1. Task Scheduler öffnen → *Aufgabe erstellen*.
-2. Trigger: *Bei Anmeldung*.
-3. Aktion: *Programm starten*
-   - Programm: `powershell.exe`
-   - Argumente: `-WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\Pfad\zu\wohnungs_radar\start.ps1"`
-4. Häkchen *„Nur ausführen, wenn Benutzer angemeldet ist"*.
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install-autostart.ps1
+```
 
-Alternativ eine Verknüpfung auf `start.ps1` in den Autostart-Ordner
-(`shell:startup`) legen.
+Das registriert die Aufgabe `WohnungsRadar` (Trigger *Bei Anmeldung*), die
+`start.ps1` beim nächsten Login versteckt startet.
+
+```powershell
+schtasks /run /tn WohnungsRadar      # sofort testen
+schtasks /delete /tn WohnungsRadar /f # wieder entfernen
+```
 
 ---
 
