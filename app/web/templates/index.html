@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!--
+  Die Filterleiste lädt bei jeder Änderung nur die Tabellenzeilen nach
+  (hx-get auf /partials/listings). Kein Full-Page-Reload, keine Client-State-
+  Verwaltung — genau der Fall, für den HTMX gedacht ist.
+-->
+<form id="filter-form"
+      class="filters"
+      hx-get="/partials/listings"
+      hx-target="#listing-rows"
+      hx-trigger="change, keyup delay:400ms from:input[type=number], refresh"
+      hx-indicator="#loading">
+
+  <label>
+    Max. Miete (warm)
+    <input type="number" name="max_rent" min="0" step="50"
+           value="{{ filters.max_rent|round|int if filters.max_rent else '' }}">
+  </label>
+
+  <label>
+    Min. Größe (m²)
+    <input type="number" name="min_size" min="0" step="1"
+           value="{{ filters.min_size|round|int if filters.min_size else '' }}">
+  </label>
+
+  <label>
+    Max. ÖPNV zur TUM (min)
+    <input type="number" name="max_transit" min="0" step="5"
+           value="{{ filters.max_transit_minutes or '' }}">
+  </label>
+
+  <label>
+    Stadtteile <span class="hint">(Komma-getrennt, leer = alle)</span>
+    <input type="text" name="districts"
+           value="{{ filters.districts|join(', ') if filters.districts else '' }}">
+  </label>
+
+  <label>
+    Typ
+    <select name="listing_type">
+      <option value="">alle</option>
+      <option value="wg_room" {% if filters.listing_type == 'wg_room' %}selected{% endif %}>WG-Zimmer</option>
+      <option value="apartment" {% if filters.listing_type == 'apartment' %}selected{% endif %}>Wohnung</option>
+    </select>
+  </label>
+
+  <label>
+    Sortierung
+    <select name="sort">
+      <option value="newest" {% if filters.sort == 'newest' %}selected{% endif %}>Neueste zuerst</option>
+      <option value="score" {% if filters.sort == 'score' %}selected{% endif %}>Bester Score</option>
+      <option value="rent" {% if filters.sort == 'rent' %}selected{% endif %}>Günstigste Miete</option>
+      <option value="size" {% if filters.sort == 'size' %}selected{% endif %}>Größte Fläche</option>
+      <option value="transit" {% if filters.sort == 'transit' %}selected{% endif %}>Kürzeste Fahrzeit</option>
+    </select>
+  </label>
+
+  <label class="checkbox">
+    <input type="checkbox" name="only_favorites" value="true"
+           {% if filters.only_favorites %}checked{% endif %}>
+    nur Favoriten
+  </label>
+
+  <label class="checkbox">
+    <input type="checkbox" name="include_hidden" value="true"
+           {% if filters.include_hidden %}checked{% endif %}>
+    Ausgeblendete zeigen
+  </label>
+
+  <span id="loading" class="htmx-indicator">lädt …</span>
+</form>
+
+<table class="listings">
+  <thead>
+    <tr>
+      <th>Score</th>
+      <th>Titel</th>
+      <th>Miete</th>
+      <th>Größe</th>
+      <th>Stadtteil</th>
+      <th title="Fuß / Rad / ÖPNV zur TUM Garching">Zur TUM</th>
+      <th title="Supermarkt / Apotheke / Haltestelle">Umgebung</th>
+      <th>Portal</th>
+      <th>Gefunden</th>
+      <th>Aktionen</th>
+    </tr>
+  </thead>
+  <tbody id="listing-rows">
+    {% include "_listing_rows.html" %}
+  </tbody>
+</table>
+{% endblock %}

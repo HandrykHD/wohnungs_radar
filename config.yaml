@@ -1,0 +1,132 @@
+# =============================================================================
+#  Wohnungs- & WG-Radar München — Konfiguration
+# =============================================================================
+#  Diese Datei enthält KEINE Secrets. API-Keys gehören ausschließlich in .env.
+#  Änderungen werden beim Neustart der App übernommen.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Referenzpunkte: Wozu wird die Entfernung berechnet?
+# -----------------------------------------------------------------------------
+# Die Koordinaten sind fest hinterlegt, damit die App ohne Netz starten kann und
+# nicht bei jedem Start Nominatim belästigt. Wenn du die Adresse änderst, lösche
+# lat/lon — dann geocodiert die App die Adresse einmalig neu und cacht sie.
+tum_campus:
+  primary:
+    label: "TUM Garching (Informatik)"
+    address: "Boltzmannstraße 3, 85748 Garching"
+    lat: 48.262541
+    lon: 11.668114
+  secondary:
+    label: "TUM Stammgelände"
+    address: "Arcisstraße 21, 80333 München"
+    lat: 48.148990
+    lon: 11.567890
+    enabled: false          # true = zweite Distanzspalte wird berechnet und angezeigt
+
+# -----------------------------------------------------------------------------
+# Suchkriterien
+# -----------------------------------------------------------------------------
+search:
+  # Welche Objekttypen sollen gesammelt werden?
+  listing_types: ["wg_room", "apartment"]
+
+  # Getrennte Limits je Typ — eine eigene Wohnung in München kostet nun einmal
+  # deutlich mehr als ein WG-Zimmer. Ein gemeinsames Limit würde entweder
+  # WG-Zimmer verwässern oder Wohnungen komplett ausfiltern.
+  wg_room:
+    max_warm_rent: 900      # Euro warm
+    min_size_sqm: 15        # Zimmergröße
+  apartment:
+    max_warm_rent: 1400     # Euro warm
+    min_size_sqm: 25        # Wohnfläche
+
+  # Leere Liste = keine Stadtteil-Einschränkung (alle Münchner Stadtteile).
+  # Die Namen werden case-insensitiv als Teilstring gegen den Stadtteil geprüft.
+  districts:
+    - "Garching"
+    - "Schwabing"
+    - "Maxvorstadt"
+    - "Freimann"
+    - "Milbertshofen"
+    - "Neuhausen"
+
+  # Harte Obergrenze der ÖPNV-Fahrzeit zum primären Campus (Minuten).
+  # Angebote darüber werden nicht gelöscht, aber im Frontend ausgefiltert.
+  max_transit_minutes_to_tum: 40
+
+  # Umkreis um den Münchner Stadtkern, in dem Angebote überhaupt akzeptiert
+  # werden. Verhindert, dass Portal-Suchen versehentlich Augsburg einsammeln.
+  max_radius_km_from_munich: 25
+
+# -----------------------------------------------------------------------------
+# Scoring: Wie wird die Gesamtbewertung (0–100) gewichtet?
+# -----------------------------------------------------------------------------
+# Die Summe muss nicht 1.0 ergeben — es wird intern normalisiert.
+# Jede Teilkomponente liefert 0..1, danach gewichtete Summe * 100.
+scoring_weights:
+  distance_to_tum: 0.4      # kürzere Fahrzeit zur Uni = besser
+  rent: 0.3                 # günstiger = besser (relativ zum max_warm_rent)
+  size: 0.2                 # größer = besser (relativ zum min_size_sqm)
+  surroundings: 0.1         # Supermarkt/Apotheke/Haltestelle in Gehweite = besser
+
+# -----------------------------------------------------------------------------
+# Datenquellen — einzeln abschaltbar
+# -----------------------------------------------------------------------------
+# WICHTIG: Lies DATA_SOURCES.md, bevor du eine Quelle aktivierst. Die AGB aller
+# drei Portale untersagen automatisierten Abruf. Nutzung auf eigenes Risiko und
+# ausschließlich in privatem, geringem Umfang.
+sources:
+  dummy: true               # Testadapter ohne Netzzugriff (M0) — für Entwicklung
+  wg_gesucht: false         # wird in M1 aktiviert
+  immoscout: false          # wird in M4 aktiviert (Akamai-Bot-Schutz)
+  kleinanzeigen: false      # wird in M4 aktiviert (Cloudflare-Bot-Schutz)
+
+# -----------------------------------------------------------------------------
+# Scraping-Verhalten (höfliches Crawling)
+# -----------------------------------------------------------------------------
+scraping:
+  poll_interval_minutes: 15         # Abstand zwischen zwei Sammel-Läufen
+  request_delay_seconds: 3.0        # Pause zwischen zwei Requests derselben Quelle
+  request_timeout_seconds: 20
+  max_retries: 3                    # bei Netzfehlern/5xx, mit exponentiellem Backoff
+  max_pages_per_run: 3              # wie viele Ergebnisseiten pro Quelle und Lauf
+  user_agent: "WohnungsRadar/0.1 (privates Projekt; Kontakt siehe OSM_CONTACT_EMAIL)"
+
+# -----------------------------------------------------------------------------
+# Geo-Dienste
+# -----------------------------------------------------------------------------
+geo:
+  nominatim_url: "https://nominatim.openstreetmap.org"
+  nominatim_delay_seconds: 1.1      # Nominatim-Policy: max. 1 Request/Sekunde
+  osrm_url: "https://router.project-osrm.org"
+  overpass_url: "https://overpass-api.de/api/interpreter"
+  # HAFAS-basierte ÖPNV-API (deckt MVV über die DB-Fahrplanauskunft ab).
+  # Kein Key nötig; bitte trotzdem sparsam abfragen — Ergebnisse werden gecacht.
+  transit_api_url: "https://v6.db.transport.rest"
+  poi_search_radius_m: 1000         # Suchradius für Supermarkt/Apotheke/Haltestelle
+  cache_ttl_days: 90                # Geo-Ergebnisse ändern sich praktisch nie
+
+# -----------------------------------------------------------------------------
+# Benachrichtigungen
+# -----------------------------------------------------------------------------
+notifications:
+  enabled: true
+  browser: true                     # Web Notifications API im offenen Chrome-Fenster
+  desktop: true                     # Windows-Toast via powershell.exe (WSL2-Fallback)
+  telegram: false                   # spätere Ausbaustufe, Token in .env
+  min_score: 0                      # nur benachrichtigen ab diesem Score (0 = alle Treffer)
+  max_per_run: 5                    # Schutz vor Benachrichtigungs-Lawinen beim ersten Lauf
+
+# -----------------------------------------------------------------------------
+# Server & Betrieb
+# -----------------------------------------------------------------------------
+server:
+  host: "127.0.0.1"
+  port: 8765
+  # SQLite-Datei. Hinweis: Auf /mnt/c (Windows-Laufwerk unter WSL2) kann SQLite
+  # durch DrvFs-Dateisperren langsam werden. Bei Problemen auf einen reinen
+  # Linux-Pfad umstellen, z.B. "~/.local/share/wohnungsradar/wohnungsradar.db".
+  database_path: "data/wohnungsradar.db"
+  log_path: "logs/wohnungsradar.log"
+  log_level: "INFO"

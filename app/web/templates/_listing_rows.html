@@ -1,0 +1,11 @@
+{# Alle Tabellenzeilen. Wird von index.html eingebettet und von HTMX ersetzt. #}
+{% for listing in listings %}
+  {% include "_listing_row.html" %}
+{% else %}
+  <tr class="empty">
+    <td colspan="10">
+      Keine Angebote gefunden. Entweder lockerst du die Filter, oder du klickst
+      oben auf „Jetzt suchen“ — beim allerersten Start ist die Datenbank leer.
+    </td>
+  </tr>
+{% endfor %}

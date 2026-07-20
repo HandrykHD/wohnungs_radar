@@ -1,0 +1,82 @@
+{#
+  Eine einzelne Tabellenzeile.
+
+  Eigenes Template, weil die Status-Route (Favorit/Ausblenden) genau diese Zeile
+  zurückgibt und HTMX sie per hx-swap="outerHTML" an Ort und Stelle austauscht.
+#}
+<tr id="listing-{{ listing.id }}" class="status-{{ listing.status.value }}">
+  <td class="score">
+    {% if listing.score is not none %}
+      <span class="score-badge" style="--score: {{ listing.score|round|int }}">
+        {{ listing.score|round|int }}
+      </span>
+    {% else %}
+      <span class="muted" title="Noch nicht angereichert">–</span>
+    {% endif %}
+  </td>
+
+  <td class="title">
+    <a href="{{ listing.url }}" target="_blank" rel="noopener noreferrer">{{ listing.title }}</a>
+    {% if listing.status.value == 'neu' %}<span class="badge badge-new">neu</span>{% endif %}
+    {% if listing.address %}<div class="muted small">{{ listing.address }}</div>{% endif %}
+  </td>
+
+  <td class="numeric">{{ listing.rent_display() }}</td>
+
+  <td class="numeric">
+    {% if listing.size_sqm %}{{ listing.size_sqm|round|int }} m²{% else %}—{% endif %}
+    {% if listing.rooms %}<div class="muted small">{{ listing.rooms|round(1) }} Zi.</div>{% endif %}
+  </td>
+
+  <td>{{ listing.district or '—' }}</td>
+
+  <td class="distances">
+    {% if listing.transit_minutes %}
+      <div title="{{ listing.transit_summary or 'ÖPNV' }}">
+        🚇 {{ listing.transit_minutes|round|int }} min
+        {%- if listing.transit_changes %} ({{ listing.transit_changes }}×){% endif %}
+      </div>
+    {% endif %}
+    {% if listing.bike_minutes %}<div>🚲 {{ listing.bike_minutes|round|int }} min</div>{% endif %}
+    {% if listing.walk_minutes %}<div>🚶 {{ listing.walk_minutes|round|int }} min</div>{% endif %}
+    {% if not (listing.transit_minutes or listing.bike_minutes or listing.walk_minutes) %}
+      <span class="muted">—</span>
+    {% endif %}
+  </td>
+
+  <td class="surroundings small">
+    {% if listing.supermarket_m %}<div>🛒 {{ listing.supermarket_m|round|int }} m</div>{% endif %}
+    {% if listing.pharmacy_m %}<div>💊 {{ listing.pharmacy_m|round|int }} m</div>{% endif %}
+    {% if listing.transit_stop_m %}
+      <div title="{{ listing.transit_stop_name or '' }}">🚏 {{ listing.transit_stop_m|round|int }} m</div>
+    {% endif %}
+    {% if not (listing.supermarket_m or listing.pharmacy_m or listing.transit_stop_m) %}
+      <span class="muted">—</span>
+    {% endif %}
+  </td>
+
+  <td class="source">{{ listing.source }}</td>
+
+  <td class="muted small">{{ listing.first_seen_at|dt }}</td>
+
+  <td class="actions">
+    <button class="btn-icon"
+            title="Als Favorit markieren"
+            hx-post="/api/listings/{{ listing.id }}/status"
+            hx-vals='{"status": "favorisiert"}'
+            hx-target="#listing-{{ listing.id }}"
+            hx-swap="outerHTML">
+      {% if listing.status.value == 'favorisiert' %}★{% else %}☆{% endif %}
+    </button>
+
+    <button class="btn-icon"
+            title="Ausblenden"
+            hx-post="/api/listings/{{ listing.id }}/status"
+            hx-vals='{"status": "ausgeblendet"}'
+            hx-target="#listing-{{ listing.id }}"
+            hx-swap="outerHTML">✕</button>
+
+    <a class="btn-icon" href="{{ listing.url }}" target="_blank" rel="noopener noreferrer"
+       title="Im Portal öffnen">↗</a>
+  </td>
+</tr>

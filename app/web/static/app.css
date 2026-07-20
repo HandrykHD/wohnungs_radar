@@ -1,0 +1,200 @@
+/* Wohnungs-Radar — Oberfläche.
+   Bewusst schlank: kein CSS-Framework, damit die App offline und ohne Build
+   funktioniert. Farbschema folgt der Systemeinstellung (hell/dunkel). */
+
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --border: #dfe3e8;
+  --text: #1c2024;
+  --muted: #6b7280;
+  --accent: #0b6bcb;
+  --new: #d94f04;
+  --fav: #d4a017;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15181c;
+    --surface: #1e2227;
+    --border: #333940;
+    --text: #e6e8ea;
+    --muted: #9aa3ad;
+    --accent: #5aa9f5;
+    --new: #ff8a4c;
+    --fav: #f0c040;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* --- Kopfleiste --- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar h1 { font-size: 1.05rem; margin: 0; font-weight: 600; }
+.subtitle { color: var(--muted); font-weight: 400; margin-left: 0.5rem; font-size: 0.85rem; }
+.topbar-actions { display: flex; align-items: center; gap: 0.75rem; }
+
+/* --- Filter --- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 1.25rem;
+  align-items: flex-end;
+  padding: 1rem 1.25rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.filters label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+
+.filters input, .filters select {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text);
+  min-width: 7rem;
+}
+
+.filters input[type="text"] { min-width: 16rem; }
+.filters input[type="checkbox"] { min-width: 0; }
+.hint { font-weight: 400; opacity: 0.75; }
+
+/* --- Tabelle --- */
+
+.listings {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+}
+
+.listings th, .listings td {
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.listings th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 600;
+  position: sticky;
+  top: 3.1rem;
+  background: var(--surface);
+}
+
+.listings tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+
+.title a { color: var(--accent); text-decoration: none; font-weight: 500; }
+.title a:hover { text-decoration: underline; }
+
+.numeric { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.distances, .surroundings { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.source { color: var(--muted); font-size: 0.8rem; }
+
+.muted { color: var(--muted); }
+.small { font-size: 0.78rem; }
+.empty td { padding: 2.5rem 1rem; text-align: center; color: var(--muted); }
+
+/* Ausgeblendete Angebote bleiben lesbar, treten aber zurück. */
+tr.status-ausgeblendet { opacity: 0.4; }
+tr.status-favorisiert { background: color-mix(in srgb, var(--fav) 10%, transparent); }
+
+/* --- Score-Badge: färbt sich über die CSS-Variable --score (0–100) --- */
+
+.score-badge {
+  display: inline-block;
+  min-width: 2.2rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 5px;
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #10241a;
+  background: hsl(calc(var(--score) * 1.2) 65% 72%);
+}
+
+/* --- Badges & Buttons --- */
+
+.badge {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.badge-new { background: var(--new); color: #fff; }
+
+.btn {
+  font: inherit;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn:disabled { opacity: 0.6; cursor: default; }
+
+.btn-icon {
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+.actions { white-space: nowrap; }
+
+/* --- HTMX-Ladeanzeige --- */
+
+.htmx-indicator { opacity: 0; transition: opacity 0.2s; color: var(--muted); }
+.htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Wohnungs-Radar München{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <!-- HTMX liegt lokal, damit die Oberfläche auch ohne Internetverbindung funktioniert. -->
+  <script src="/static/htmx.min.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>
+      Wohnungs-&nbsp;&amp; WG-Radar
+      <span class="subtitle">München → TUM Garching</span>
+    </h1>
+    <div class="topbar-actions">
+      {% if new_since_visit %}
+        <span class="badge badge-new" title="Neue Angebote seit deinem letzten Besuch">
+          {{ new_since_visit }} neu
+        </span>
+      {% endif %}
+      <span class="muted" title="Letzter Sammel-Lauf">
+        {% if last_run_at %}Lauf: {{ last_run_at[11:16] }}{% else %}noch kein Lauf{% endif %}
+      </span>
+      <button type="button" class="btn" id="collect-now">Jetzt suchen</button>
+    </div>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    // "Jetzt suchen" stößt einen Sammel-Lauf an und lädt danach die Tabelle neu.
+    document.getElementById('collect-now')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      button.textContent = 'Suche läuft …';
+      try {
+        const response = await fetch('/api/collect', { method: 'POST' });
+        const stats = await response.json();
+        button.textContent = `${stats.new} neu`;
+        htmx.trigger('#filter-form', 'refresh');
+      } catch (error) {
+        button.textContent = 'Fehler';
+        console.error(error);
+      } finally {
+        setTimeout(() => {
+          button.disabled = false;
+          button.textContent = 'Jetzt suchen';
+        }, 2500);
+      }
+    });
+  </script>
+</body>
+</html>
