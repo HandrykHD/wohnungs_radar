@@ -11,6 +11,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from app.config import Config
 from app.db import session_scope, set_state, upsert_listing
+from app.enrich.pipeline import enrich_pending
 from app.models import Listing, utcnow
 from app.sources import build_enabled_adapters
 from app.sources.base import run_adapter_safely
@@ -36,24 +37,28 @@ async def is_online(timeout: float = 5.0) -> bool:
         return False
 
 
-async def collect_once(config: Config) -> dict[str, int]:
-    """Einen vollständigen Sammel-Lauf ausführen.
+async def scrape_only(config: Config) -> dict[str, int]:
+    """Nur sammeln und deduplizieren — ohne Anreicherung.
 
-    Ablauf: alle aktiven Adapter parallel abrufen (jeder für sich fehlerisoliert),
-    Ergebnisse deduplizieren und speichern.
+    Bewusst schnell gehalten: Diese Funktion beantwortet den „Jetzt suchen"-Button
+    im Frontend, der nicht minutenlang auf Geocoding/ÖPNV warten soll. Die
+    Anreicherung läuft davon entkoppelt (siehe :func:`enrich_once`).
 
     Returns:
-        Statistik mit den Schlüsseln ``fetched``, ``new`` und ``updated``.
+        ``{"fetched", "new", "updated", "online"}``. ``online`` sagt dem Aufrufer,
+        ob sich ein anschließender Anreicherungslauf lohnt.
     """
     adapters = build_enabled_adapters(config)
     if not adapters:
-        return {"fetched": 0, "new": 0, "updated": 0}
+        return {"fetched": 0, "new": 0, "updated": 0, "online": 1}
+
+    online_ok = await is_online()
 
     # Der Dummy-Adapter braucht kein Netz — nur bei echten Quellen abbrechen.
     needs_network = any(adapter.name != "dummy" for adapter in adapters)
-    if needs_network and not await is_online():
+    if needs_network and not online_ok:
         logger.info("Offline — Sammel-Lauf wird übersprungen, nächster Versuch nach Intervall.")
-        return {"fetched": 0, "new": 0, "updated": 0}
+        return {"fetched": 0, "new": 0, "updated": 0, "online": 0}
 
     results = await asyncio.gather(*(run_adapter_safely(adapter) for adapter in adapters))
     fetched: list[Listing] = [listing for batch in results for listing in batch]
@@ -76,7 +81,49 @@ async def collect_once(config: Config) -> dict[str, int]:
         new_count,
         updated_count,
     )
-    return {"fetched": len(fetched), "new": new_count, "updated": updated_count}
+    return {
+        "fetched": len(fetched),
+        "new": new_count,
+        "updated": updated_count,
+        "online": 1 if online_ok else 0,
+    }
+
+
+async def enrich_once(config: Config) -> dict[str, int]:
+    """Einen Schwung offener Angebote anreichern (Geocoding, Distanzen, POIs, Score).
+
+    Braucht Netz und kann je nach ``enrichment.max_per_run`` einige Minuten dauern
+    (Nominatim 1 Req/s, Overpass-Pausen). Ein Fehler wird abgefangen, damit die
+    App weiterläuft.
+    """
+    try:
+        with session_scope() as session:
+            return await enrich_pending(session, config)
+    except Exception:
+        logger.exception("Anreicherungsphase mit unerwartetem Fehler abgebrochen")
+        return {"processed": 0, "deferred": 0}
+
+
+async def collect_once(config: Config) -> dict[str, int]:
+    """Vollständiger Lauf für den Scheduler: erst sammeln, dann anreichern.
+
+    Läuft im Hintergrund-Job, daher darf die Anreicherung hier ruhig dauern.
+
+    Returns:
+        Kombinierte Statistik aus Sammeln und Anreicherung.
+    """
+    scrape = await scrape_only(config)
+    enrich = {"processed": 0, "deferred": 0}
+    if scrape.get("online"):
+        enrich = await enrich_once(config)
+
+    return {
+        "fetched": scrape["fetched"],
+        "new": scrape["new"],
+        "updated": scrape["updated"],
+        "enriched": enrich["processed"],
+        "enrich_deferred": enrich["deferred"],
+    }
 
 
 class CollectorScheduler:
@@ -87,6 +134,9 @@ class CollectorScheduler:
     def __init__(self, config: Config) -> None:
         self._config = config
         self._scheduler = AsyncIOScheduler(timezone="Europe/Berlin")
+        # Hintergrund-Task der manuellen Anreicherung (Button), damit parallele
+        # Auslösungen sich nicht überlagern.
+        self._enrich_task: asyncio.Task | None = None
 
     def start(self) -> None:
         """Scheduler starten und den Sammel-Job registrieren.
@@ -117,8 +167,19 @@ class CollectorScheduler:
             logger.exception("Sammel-Lauf mit unerwartetem Fehler abgebrochen")
 
     async def trigger_now(self) -> dict[str, int]:
-        """Sammel-Lauf sofort ausführen (für den Button im Frontend)."""
-        return await collect_once(self._config)
+        """Vom „Jetzt suchen"-Button ausgelöst: schnell sammeln, dann anreichern.
+
+        Das Sammeln wird abgewartet und liefert sofort die Trefferzahl zurück; die
+        (langsame) Anreicherung läuft als Hintergrund-Task weiter, damit der Button
+        nicht minutenlang blockiert. Ein bereits laufender Anreicherungs-Task wird
+        nicht ein zweites Mal gestartet.
+        """
+        stats = await scrape_only(self._config)
+
+        if stats.get("online") and (self._enrich_task is None or self._enrich_task.done()):
+            self._enrich_task = asyncio.create_task(enrich_once(self._config))
+
+        return stats
 
     def shutdown(self) -> None:
         """Scheduler geordnet herunterfahren."""

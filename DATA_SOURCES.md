@@ -101,10 +101,23 @@ Alle Adapter erben von `app/sources/base.py::SourceAdapter` und nutzen den
 
 | Dienst      | Zweck                    | Limit / Policy | Hinweis |
 |-------------|--------------------------|----------------|---------|
-| Nominatim   | Adresse → Koordinaten    | max. **1 req/s**, echter UA mit Kontakt Pflicht | Ergebnisse werden dauerhaft gecacht |
-| OSRM (Demo) | Fuß-/Rad-Route zur TUM   | „reasonable use", kein SLA | Alternative: OpenRouteService (Key) oder eigener OSRM |
-| Overpass    | POIs (Supermarkt etc.)   | fair use, teilen sich alle Nutzer | wenige Queries dank Cache |
-| db.transport.rest | ÖPNV-Verbindung (HAFAS/DB, deckt MVV) | fair use, kein Key | pro Angebot 1× berechnet und gecacht |
+| Nominatim   | Adresse → Koordinaten    | max. **1 req/s**, echter UA mit Kontakt Pflicht | vor jeder Abfrage 1,1 s Pause; Ergebnisse dauerhaft gecacht |
+| OSRM (Demo) | Fuß-/Rad-Route           | nur Auto-Profil geladen! | **wird nicht genutzt** — Fuß/Rad wird aus Luftlinie geschätzt; exakt nur mit ORS-Key |
+| Overpass    | POIs (Supermarkt etc.)   | fair use, verlangt UA (sonst 406), unter Last 429/504 | 1,5 s Pause + Spiegel-Fallback (maps.mail.ru); gecacht |
+| MVG-API     | ÖPNV-Verbindung zur TUM  | inoffiziell/undokumentiert, kein Key, fair use | pro Angebot 1× berechnet und gecacht |
 
-Details und Alternativen (eigener OSRM-Server, OpenTripPlanner) stehen in der
-`README.md` unter „Geo-Dienste".
+**Warum MVG statt einer HAFAS-API?** Ursprünglich war `v6.db.transport.rest`
+(HAFAS/DB) vorgesehen. Der öffentliche Dienst war zum Umsetzungszeitpunkt jedoch
+dauerhaft mit HTTP 503 nicht verfügbar. Die offizielle MVG-API liefert dieselbe
+Information (Tür-zu-Tür mit Umstiegen) in besserer lokaler Qualität und ist der
+authoritative Anbieter für München. Sie ist inoffiziell — bei Layout-Änderungen
+kann der ÖPNV-Teil ausfallen, ohne die übrige App zu beeinträchtigen (die
+Fahrzeit bleibt dann einfach leer). Umschaltbar über `geo.mvg_api_url` bzw. durch
+Anpassen von `app/enrich/transit.py`.
+
+**Warum wird OSRM nicht für Fuß/Rad genutzt?** Der öffentliche Demo-Server
+`router.project-osrm.org` hat nur das Auto-Profil geladen und liefert für
+`foot`/`bike` klammheimlich Autozeiten (verifiziert). Die App schätzt Fuß-/Rad-
+zeiten daher aus der Luftlinie (Umwegfaktor + realistische Geschwindigkeiten).
+Wer exakte Werte will, hinterlegt einen kostenlosen `ORS_API_KEY`
+(OpenRouteService) — dann werden echte Fuß-/Radrouten abgefragt.

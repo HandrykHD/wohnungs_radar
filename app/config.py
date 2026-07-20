@@ -103,9 +103,22 @@ class GeoConfig(BaseModel):
     nominatim_delay_seconds: float = 1.1
     osrm_url: str = "https://router.project-osrm.org"
     overpass_url: str = "https://overpass-api.de/api/interpreter"
-    transit_api_url: str = "https://v6.db.transport.rest"
+    # Ausweich-Spiegel, falls der Hauptserver mit 429/504 überlastet ist.
+    overpass_fallback_urls: list[str] = Field(
+        default_factory=lambda: ["https://maps.mail.ru/osm/tools/overpass/api/interpreter"]
+    )
+    overpass_delay_seconds: float = 1.5
+    mvg_api_url: str = "https://www.mvg.de/api/bgw-pt/v3"
     poi_search_radius_m: int = 1000
     cache_ttl_days: int = 90
+
+
+class EnrichmentConfig(BaseModel):
+    enabled: bool = True
+    max_per_run: int = 20
+    walk_speed_kmh: float = 4.8
+    bike_speed_kmh: float = 15.0
+    detour_factor: float = 1.35
 
 
 class NotificationsConfig(BaseModel):
@@ -149,6 +162,7 @@ class Config(BaseModel):
     sources: SourcesConfig = Field(default_factory=SourcesConfig)
     scraping: ScrapingConfig = Field(default_factory=ScrapingConfig)
     geo: GeoConfig = Field(default_factory=GeoConfig)
+    enrichment: EnrichmentConfig = Field(default_factory=EnrichmentConfig)
     notifications: NotificationsConfig = Field(default_factory=NotificationsConfig)
     server: ServerConfig = Field(default_factory=ServerConfig)
     secrets: Secrets = Field(default_factory=Secrets)

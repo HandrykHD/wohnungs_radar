@@ -17,14 +17,22 @@ neuen passenden Treffern benachrichtigt. Alles läuft auf dem eigenen Laptop
 | Meilenstein | Inhalt | Status |
 |-------------|--------|--------|
 | **M0** | Gerüst: FastAPI, SQLite, Config, Dummy-Adapter, HTMX-Tabelle, Startskripte | ✅ fertig |
-| M1 | WG-Gesucht-Adapter, Scheduler, Dedup | geplant |
-| M2 | Geocoding, Fuß-/Rad-/ÖPNV-Distanz, POIs, Scoring | geplant |
+| **M1** | WG-Gesucht-Adapter (WG-Zimmer + Wohnungen), Scheduler, Dedup | ✅ fertig |
+| **M2** | Geocoding, Fuß-/Rad-Schätzung, ÖPNV zur TUM, POIs, Scoring | ✅ fertig |
 | M3 | Browser- & Desktop-Benachrichtigungen | geplant |
 | M4 | Weitere Quellen, Filter, Kartenansicht | geplant |
 | M5 | ÖPNV-Feinschliff & Auto-Start | geplant |
 
-In M0 ist der **Dummy-Adapter** aktiv: er erzeugt realistische Beispielangebote
-ohne Netzzugriff, damit die App sofort etwas anzeigt und getestet werden kann.
+Aktiv ist der **WG-Gesucht-Adapter**; jedes neue Angebot wird im Hintergrund
+angereichert (Koordinaten, Fuß-/Rad-/ÖPNV-Zeit zur TUM Garching, Umgebungs-POIs,
+Score). Der Dummy-Adapter bleibt für Entwicklung/Tests verfügbar (in
+`config.yaml` umschaltbar).
+
+**Ablauf eines Laufs:** Der Scheduler sammelt alle 15 min neue Angebote und
+reichert danach einen Schwung (`enrichment.max_per_run`, Default 20) an. Die
+Anreicherung ist bewusst langsam getaktet (Nominatim erlaubt nur 1 Anfrage/s),
+läuft daher im Hintergrund weiter — der „Jetzt suchen"-Button kehrt sofort mit
+der Trefferzahl zurück, die Scores/Zeiten erscheinen nach und nach.
 
 ---
 
@@ -129,20 +137,31 @@ setzen. In M0 ist nur `dummy: true` sinnvoll; die echten Adapter kommen ab M1.
 
 ---
 
-## Geo-Dienste (ab M2 relevant)
+## Geo-Dienste
 
-Standardmäßig kostenlose Open-Data-Dienste, alle Ergebnisse werden gecacht:
+Ausschließlich kostenlose Open-Data-Dienste ohne Pflicht-Key; **alle** Ergebnisse
+werden dauerhaft in der DB gecacht (Adressen ändern sich nicht):
 
-- **Nominatim** (OpenStreetMap) — Adresse → Koordinaten. Max. 1 Anfrage/Sekunde,
-  echter User-Agent mit Kontakt Pflicht (daher `OSM_CONTACT_EMAIL`).
-- **OSRM** (Demo-Server) — Fuß-/Rad-Routen. Ohne Key. Alternative:
-  OpenRouteService (`ORS_API_KEY` in `.env`) oder ein eigener OSRM-Container.
-- **Overpass** (OpenStreetMap) — POIs (Supermarkt, Apotheke, Haltestelle).
-- **db.transport.rest** (HAFAS/DB, deckt MVV ab) — echte ÖPNV-Verbindung mit
-  Umstiegen und Fahrzeit zur TUM Garching. Ohne Key, wird pro Angebot einmal
-  berechnet und gecacht.
+- **Nominatim** (OpenStreetMap) — Adresse → Koordinaten + Stadtteil. Max. 1
+  Anfrage/Sekunde, echter User-Agent mit Kontakt Pflicht (daher
+  `OSM_CONTACT_EMAIL` in `.env`).
+- **Fuß-/Rad-Zeit** — geschätzt aus der Luftlinie (Umwegfaktor + realistische
+  Geschwindigkeiten, konfigurierbar unter `enrichment`). Grund: Der öffentliche
+  OSRM-Demo-Server kann nur das Auto-Profil und liefert für Fuß/Rad heimlich
+  Autozeiten. Für **exakte** Werte einen kostenlosen `ORS_API_KEY`
+  (OpenRouteService) in `.env` hinterlegen — dann werden echte Routen abgefragt.
+- **MVG-API** — echte ÖPNV-Verbindung (Tür-zu-Tür, Umstiege, Fahrzeit) zur TUM
+  Garching. Offizieller Münchner Anbieter, kein Key. (Ursprünglich war eine
+  HAFAS-API geplant; sie war dauerhaft nicht erreichbar — Details in
+  `DATA_SOURCES.md`.)
+- **Overpass** (OpenStreetMap) — nächster Supermarkt, Apotheke, ÖPNV-Haltestelle.
+  Stark ausgelasteter Gratis-Dienst; die App pausiert vor jeder Anfrage und
+  weicht bei Überlast auf einen Spiegel aus.
 
 Google Maps wird bewusst **nicht** genutzt (kostenpflichtig, API-Key nötig).
+
+Alle Geo-Parameter (Dienst-URLs, Suchradius, Cache-Dauer, Geschwindigkeiten)
+stehen kommentiert in `config.yaml` unter `geo` und `enrichment`.
 
 ---
 
@@ -194,8 +213,8 @@ app/
 ├── queries.py         Filter- und Sortierlogik (geteilt: Web/API/Notify)
 ├── scheduler.py       APScheduler-Job, Online-Check, Sammel-Lauf
 ├── logging_setup.py   Konsole + rotierende Logdatei
-├── sources/           Portal-Adapter (base, dummy, später wg_gesucht …)
-├── enrich/            Geocoding/Routing/POI/Scoring (ab M2)
+├── sources/           Portal-Adapter (base, dummy, wg_gesucht …)
+├── enrich/            cache, geocode, routing, transit (MVG), pois, scoring, pipeline
 ├── notify/            Benachrichtigungen (ab M3)
 └── web/               HTMX-Templates + statische Dateien
 config.yaml · .env.example · requirements*.txt · start.sh · start.ps1

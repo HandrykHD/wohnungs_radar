@@ -99,13 +99,36 @@ scraping:
 geo:
   nominatim_url: "https://nominatim.openstreetmap.org"
   nominatim_delay_seconds: 1.1      # Nominatim-Policy: max. 1 Request/Sekunde
+  # OSRM-Routing für Fuß/Rad. ACHTUNG: Der öffentliche Demo-Server
+  # (router.project-osrm.org) hat NUR das Auto-Profil geladen und liefert für
+  # foot/bike heimlich Autozeiten. Deshalb nutzt die App ihn NICHT für Fuß/Rad,
+  # sondern schätzt aus Luftlinie + Umwegfaktor (siehe enrichment). Wer exakte
+  # Werte will, trägt unten einen ORS-Key ein oder betreibt einen eigenen OSRM.
   osrm_url: "https://router.project-osrm.org"
   overpass_url: "https://overpass-api.de/api/interpreter"
-  # HAFAS-basierte ÖPNV-API (deckt MVV über die DB-Fahrplanauskunft ab).
-  # Kein Key nötig; bitte trotzdem sparsam abfragen — Ergebnisse werden gecacht.
-  transit_api_url: "https://v6.db.transport.rest"
+  overpass_fallback_urls:           # Ausweich-Spiegel bei Überlast (429/504) des Hauptservers
+    - "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+  overpass_delay_seconds: 1.5       # Pause vor jeder Overpass-Query (Gratis-Dienst, strenge Limits)
+  # ÖPNV über die offizielle MVG-API (Münchner Verkehrsgesellschaft). Liefert
+  # Tür-zu-Tür-Verbindung mit Umstiegen/Dauer, beste lokale Datenqualität für
+  # München. Inoffiziell/undokumentiert — kann sich ändern; Ergebnisse gecacht.
+  mvg_api_url: "https://www.mvg.de/api/bgw-pt/v3"
   poi_search_radius_m: 1000         # Suchradius für Supermarkt/Apotheke/Haltestelle
   cache_ttl_days: 90                # Geo-Ergebnisse ändern sich praktisch nie
+
+# -----------------------------------------------------------------------------
+# Enrichment: Anreicherung neuer Angebote (Geo, Routing, POIs, Score)
+# -----------------------------------------------------------------------------
+enrichment:
+  enabled: true
+  # Pro Sammel-Lauf höchstens so viele Angebote anreichern. Schützt fremde
+  # Dienste (v.a. Nominatim mit 1 Req/s) beim ersten Lauf mit hunderten Treffern;
+  # der Rest wird in den Folgeläufen abgearbeitet.
+  max_per_run: 20
+  # Fuß-/Rad-Schätzung aus Luftlinie (nur ohne ORS-Key/eigenen OSRM):
+  walk_speed_kmh: 4.8               # realistische Gehgeschwindigkeit
+  bike_speed_kmh: 15.0              # realistische Stadt-Radgeschwindigkeit
+  detour_factor: 1.35              # Zuschlag Luftlinie → tatsächlicher Weg
 
 # -----------------------------------------------------------------------------
 # Benachrichtigungen
