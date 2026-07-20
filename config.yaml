@@ -77,8 +77,8 @@ scoring_weights:
 # drei Portale untersagen automatisierten Abruf. Nutzung auf eigenes Risiko und
 # ausschließlich in privatem, geringem Umfang.
 sources:
-  dummy: true               # Testadapter ohne Netzzugriff (M0) — für Entwicklung
-  wg_gesucht: false         # wird in M1 aktiviert
+  dummy: false              # Testadapter ohne Netzzugriff — nur für Entwicklung
+  wg_gesucht: true          # aktiv seit M1 (öffentliche HTML-Suche, siehe DATA_SOURCES.md)
   immoscout: false          # wird in M4 aktiviert (Akamai-Bot-Schutz)
   kleinanzeigen: false      # wird in M4 aktiviert (Cloudflare-Bot-Schutz)
 

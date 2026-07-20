@@ -79,7 +79,9 @@ def normalize_district(raw: str | None) -> str | None:
         return None
     text = re.sub(r"\b\d{5}\b", " ", raw)  # PLZ raus
     text = re.sub(r"\bbei München\b", " ", text, flags=re.IGNORECASE)
-    text = re.sub(r"^\s*München\s*[-,]?\s*", "", text, flags=re.IGNORECASE)
+    # Führendes "München" wiederholt entfernen: WG-Gesucht liefert gelegentlich
+    # "München München" (Stadtteil = Stadt), das sonst als "München" durchrutscht.
+    text = re.sub(r"^\s*(?:München\s*[-,]?\s*)+", "", text, flags=re.IGNORECASE)
     text = re.sub(r"[\s,;]+", " ", text).strip(" -,")
     return text or None
 

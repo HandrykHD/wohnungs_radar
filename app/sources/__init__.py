@@ -15,12 +15,14 @@ import logging
 from app.config import Config
 from app.sources.base import SourceAdapter
 from app.sources.dummy import DummySource
+from app.sources.wg_gesucht import WgGesuchtSource
 
 logger = logging.getLogger(__name__)
 
 #: Alle bekannten Adapter, Schlüssel = Config-Schlüssel unter ``sources``.
 _REGISTRY: dict[str, type[SourceAdapter]] = {
     DummySource.name: DummySource,
+    WgGesuchtSource.name: WgGesuchtSource,
 }
 
 

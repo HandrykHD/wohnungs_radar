@@ -1,0 +1,122 @@
+<!--
+  Synthetische WG-Gesucht-Suchergebnisseite für Parser-Tests.
+
+  Die Struktur (Klassen, Verschachtelung, Reihenfolge der Preis/Datum/Größe-Spalten,
+  Standortzeile) entspricht exakt dem am 20.07.2026 verifizierten echten Markup.
+  Bewusst KEINE echten Anzeigen/Personendaten. Enthalten sind gezielt die
+  Randfälle, die der Parser beherrschen muss:
+
+    * Karte 1: Normalfall mit Straße + Hausnummer, ganzzahliger Miete/Größe.
+    * Karte 2: Tausendertrennzeichen in der Miete (1.100 €), Nachkomma-Größe (8,5 m²).
+    * Karte 3: Zeitraum statt Datum (Zwischenmiete), Stadtteil "München München".
+    * Karte 4: keine Stadtteilangabe (nur "München"), Straße ohne Hausnummer.
+    * Karte 5: Premium-Anzeige mit Query-String in der URL (href mit ?asset_id=…).
+-->
+<html><body>
+<div class="offer_list_wrapper">
+
+  <div id="liste-details-ad-1001" class="wgg_card offer_list_item " data-id="1001">
+    <div class="row">
+      <div class="col-sm-8 card_body">
+        <div class="row noprint">
+          <h2 class="truncate_title noprint">
+            <a href="/wg-zimmer-in-Muenchen-Schwabing.1001.html" title="Anzeige ansehen: Helles Zimmer">
+              Helles Zimmer in netter WG
+            </a>
+          </h2>
+        </div>
+        <div class="col-xs-11 hidable_content ">
+          <span>3er WG | München Schwabing | Hohenzollernstraße 12</span>
+        </div>
+        <div class="row noprint middle hidable_content ">
+          <div class="col-xs-3"><b>650 €</b></div>
+          <div class="col-xs-5 text-center">01.10.2026</div>
+          <div class="col-xs-3 text-right"><b>18 m²</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="liste-details-ad-1002" class="wgg_card offer_list_item " data-id="1002">
+    <div class="row">
+      <div class="col-sm-8 card_body">
+        <h2 class="truncate_title noprint">
+          <a href="/wg-zimmer-in-Muenchen-Maxvorstadt.1002.html" title="Anzeige ansehen">
+            Großes Zimmer zentral
+          </a>
+        </h2>
+        <div class="col-xs-11 hidable_content ">
+          <span>2er WG | München Maxvorstadt | Türkenstraße 58</span>
+        </div>
+        <div class="row noprint middle hidable_content ">
+          <div class="col-xs-3"><b>1.100 €</b></div>
+          <div class="col-xs-5 text-center">15.08.2026</div>
+          <div class="col-xs-3 text-right"><b>8,5 m²</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="liste-details-ad-1003" class="wgg_card offer_list_item " data-id="1003">
+    <div class="row">
+      <div class="col-sm-8 card_body">
+        <h2 class="truncate_title noprint">
+          <a href="/wg-zimmer-in-Muenchen.1003.html" title="Anzeige ansehen">
+            Zwischenmiete Sommer
+          </a>
+        </h2>
+        <div class="col-xs-11 hidable_content ">
+          <span>4er WG | München München | Hanebergstraße 2</span>
+        </div>
+        <div class="row noprint middle hidable_content ">
+          <div class="col-xs-3"><b>780 €</b></div>
+          <div class="col-xs-5 text-center">01.08.2026 - 30.09.2026</div>
+          <div class="col-xs-3 text-right"><b>20 m²</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="liste-details-ad-1004" class="wgg_card offer_list_item " data-id="1004">
+    <div class="row">
+      <div class="col-sm-8 card_body">
+        <h2 class="truncate_title noprint">
+          <a href="/wg-zimmer-in-Muenchen.1004.html" title="Anzeige ansehen">
+            Zimmer ohne Stadtteilangabe
+          </a>
+        </h2>
+        <div class="col-xs-11 hidable_content ">
+          <span>5er WG | München | Lützelsteiner Straße</span>
+        </div>
+        <div class="row noprint middle hidable_content ">
+          <div class="col-xs-3"><b>590 €</b></div>
+          <div class="col-xs-5 text-center">sofort</div>
+          <div class="col-xs-3 text-right"><b>15 m²</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="liste-details-ad-1005" class="wgg_card offer_list_item " data-id="1005">
+    <div class="row">
+      <div class="col-sm-8 card_body">
+        <h2 class="truncate_title noprint">
+          <a href="/wg-zimmer-in-Muenchen.90.0.1.0.html?asset_id=1005&pu=99&sort_column=1"
+             title="Anzeige ansehen">
+            Premium-Anzeige
+          </a>
+        </h2>
+        <div class="col-xs-11 hidable_content ">
+          <span>6er WG | München Sendling | Karwendelstraße 40</span>
+        </div>
+        <div class="row noprint middle hidable_content ">
+          <div class="col-xs-3"><b>820 €</b></div>
+          <div class="col-xs-5 text-center">01.09.2026</div>
+          <div class="col-xs-3 text-right"><b>11 m²</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body></html>

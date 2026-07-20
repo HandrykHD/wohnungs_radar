@@ -179,3 +179,10 @@ def test_normalize_district_entfernt_plz_und_praefix() -> None:
     assert normalize_district("München Schwabing-West") == "Schwabing-West"
     assert normalize_district("85748 Garching bei München") == "Garching"
     assert normalize_district(None) is None
+
+
+def test_normalize_district_nur_muenchen_wird_none() -> None:
+    """Ohne echten Stadtteil (nur die Stadt) soll None herauskommen."""
+    assert normalize_district("München") is None
+    # WG-Gesucht-Quirk: Stadtteil = Stadt wird doppelt geliefert.
+    assert normalize_district("München München") is None
