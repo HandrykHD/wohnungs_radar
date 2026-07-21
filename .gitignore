@@ -23,3 +23,9 @@ venv/
 .idea/
 Thumbs.db
 .DS_Store
+
+# Lokale Laufzeit-/Tool-Verzeichnisse
+.chrome-profile/
+.claude/
+.tokensave/
+package-lock.json

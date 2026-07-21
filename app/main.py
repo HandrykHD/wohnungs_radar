@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -16,6 +17,7 @@ from sqlmodel import Session, select
 
 from app.config import Config, get_config
 from app.db import count_new_since, get_session, get_state, init_engine, session_scope, set_state
+from app.enrich.pipeline import enrich_one
 from app.logging_setup import setup_logging
 from app.models import Listing, ListingStatus, utcnow
 from app.notify.browser import drain_pending
@@ -72,6 +74,9 @@ def _format_datetime(value: datetime | None) -> str:
 
 
 templates.env.filters["dt"] = _format_datetime
+# Campus-Adresse als Template-Global: Ziel für den Google-Maps-Routenlink in
+# der „Zur TUM"-Spalte (konfigurierbar über tum_campus.primary).
+templates.env.globals["campus_address"] = get_config().tum_campus.primary.address
 
 
 ConfigDep = Annotated[Config, Depends(get_config)]
@@ -263,6 +268,11 @@ async def set_listing_status(
     session.add(listing)
     session.commit()
     session.refresh(listing)
+
+    # Frischer Favorit ohne Anreicherung: sofort geocodieren, damit er direkt
+    # auf der Karte erscheint, statt in der Warteschlange zu warten.
+    if new_status == ListingStatus.FAVORISIERT and listing.enriched_at is None:
+        asyncio.create_task(enrich_one(get_config(), listing.id))
 
     return templates.TemplateResponse(
         request=request,

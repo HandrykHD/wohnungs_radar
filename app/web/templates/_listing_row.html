@@ -42,6 +42,14 @@
     {% if not (listing.transit_minutes or listing.bike_minutes or listing.walk_minutes) %}
       <span class="muted">—</span>
     {% endif %}
+    {# Google-Maps-Route Wohnung → TUM (Live-ÖPNV-Zeiten, ohne API-Key). #}
+    {% if listing.lat is not none or listing.address %}
+      {% set origin = (listing.lat ~ ',' ~ listing.lon) if listing.lat is not none else listing.address %}
+      <div class="small">
+        <a href="https://www.google.com/maps/dir/?api=1&origin={{ origin|urlencode }}&destination={{ campus_address|urlencode }}&travelmode=transit"
+           target="_blank" rel="noopener noreferrer" title="Route in Google Maps öffnen">G Maps ↗</a>
+      </div>
+    {% endif %}
   </td>
 
   <td class="surroundings small">
@@ -60,13 +68,14 @@
   <td class="muted small">{{ listing.first_seen_at|dt }}</td>
 
   <td class="actions">
+    {% set is_fav = listing.status.value == 'favorisiert' %}
     <button class="btn-icon"
-            title="Als Favorit markieren"
+            title="{{ 'Favorit entfernen' if is_fav else 'Als Favorit markieren' }}"
             hx-post="/api/listings/{{ listing.id }}/status"
-            hx-vals='{"status": "favorisiert"}'
+            hx-vals='{"status": "{{ 'gesehen' if is_fav else 'favorisiert' }}"}'
             hx-target="#listing-{{ listing.id }}"
             hx-swap="outerHTML">
-      {% if listing.status.value == 'favorisiert' %}★{% else %}☆{% endif %}
+      {% if is_fav %}★{% else %}☆{% endif %}
     </button>
 
     <button class="btn-icon"

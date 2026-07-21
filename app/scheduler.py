@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 
 import httpx
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -18,6 +19,14 @@ from app.sources import build_enabled_adapters
 from app.sources.base import run_adapter_safely
 
 logger = logging.getLogger(__name__)
+
+#: Zeitbudget (Sekunden) für einen Anreicherungslauf. Beim ersten Lauf mit
+#: hunderten frischen Angeboten wird der Rückstand über mehrere Batches
+#: abgearbeitet, statt pro 15-Min-Zyklus nur ``max_per_run`` Stück — sonst bleibt
+#: die „Zur TUM"-Spalte stundenlang leer. Die 1,1s-Nominatim-Pause pro Anfrage
+#: hält den Lauf ohnehin höflich; das Budget deckelt nur die Gesamtdauer, damit
+#: ein Job nicht den nächsten Sammel-Lauf endlos verdrängt.
+_ENRICH_TIME_BUDGET_SECONDS = 20 * 60
 
 #: Host für den Konnektivitätstest. Antwortet mit HTTP 204 ohne Body und wird
 #: nicht durch Captive Portals verfälscht.
@@ -97,12 +106,22 @@ async def enrich_once(config: Config) -> dict[str, int]:
     (Nominatim 1 Req/s, Overpass-Pausen). Ein Fehler wird abgefangen, damit die
     App weiterläuft.
     """
+    totals = {"processed": 0, "deferred": 0}
+    deadline = time.monotonic() + _ENRICH_TIME_BUDGET_SECONDS
     try:
-        with session_scope() as session:
-            return await enrich_pending(session, config)
+        # Rückstand in Batches leeren, solange Fortschritt entsteht. Ein Batch
+        # ohne ``processed`` heißt: Queue leer oder nur (transient) verschobene
+        # Angebote — dann jetzt aufhören, der nächste Zyklus versucht es erneut.
+        while True:
+            with session_scope() as session:
+                batch = await enrich_pending(session, config)
+            totals["processed"] += batch["processed"]
+            totals["deferred"] += batch["deferred"]
+            if batch["processed"] == 0 or time.monotonic() >= deadline:
+                break
     except Exception:
         logger.exception("Anreicherungsphase mit unerwartetem Fehler abgebrochen")
-        return {"processed": 0, "deferred": 0}
+    return totals
 
 
 async def enrich_and_notify(config: Config) -> dict[str, int]:

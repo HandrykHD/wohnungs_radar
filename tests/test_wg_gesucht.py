@@ -15,6 +15,7 @@ from app.models import ListingType
 from app.sources.wg_gesucht import (
     _CATEGORIES,
     WgGesuchtSource,
+    _build_address,
     _parse_price,
     _parse_size,
     _split_location,
@@ -81,6 +82,24 @@ def test_split_location_ohne_stadtteil() -> None:
 
 def test_split_location_leer() -> None:
     assert _split_location(None) == (None, None)
+
+
+def test_build_address_vollstaendige_strasse() -> None:
+    assert _build_address("Hohenzollernstraße 12", "Schwabing") == "Hohenzollernstraße 12, München"
+
+
+def test_build_address_abgeschnittene_strasse_faellt_auf_stadtteil_zurueck() -> None:
+    # Listenseite kürzt lange Namen mit "…"/"..." → unbrauchbar für Geocoding.
+    assert _build_address("Johann-Sebastian-Bach-Str…", "Neuhausen-Nymphenburg") == (
+        "Neuhausen-Nymphenburg, München"
+    )
+    assert _build_address("Colmarer Str. 3 , 81379 M...", "Obersendling") == (
+        "Obersendling, München"
+    )
+
+
+def test_build_address_ohne_alles() -> None:
+    assert _build_address(None, None) is None
 
 
 # --- Vollständiges Karten-Parsing gegen die Fixture -------------------------

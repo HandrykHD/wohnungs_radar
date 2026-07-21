@@ -53,13 +53,22 @@
     for (const listing of listings) {
       if (listing.lat == null || listing.lon == null) continue;
       shown += 1;
+      // Favoriten fallen auf: größer, goldener Ring, über den anderen Markern.
+      const isFav = listing.status === "favorisiert";
       const marker = L.circleMarker([listing.lat, listing.lon], {
-        radius: 8,
-        color: "#333",
-        weight: 1,
+        radius: isFav ? 11 : 8,
+        color: isFav ? "#d4a017" : "#333",
+        weight: isFav ? 3 : 1,
         fillColor: scoreColor(listing.score),
         fillOpacity: 0.85,
       });
+      // Score + TUM-Zeit ohne Klick sichtbar (Hover-Tooltip); Details im Popup.
+      const scoreText = listing.score != null ? `Score ${Math.round(listing.score)}` : "Score –";
+      const tumText =
+        listing.transit_minutes != null
+          ? `🚇 ${Math.round(listing.transit_minutes)} min zur TUM`
+          : "TUM-Zeit folgt";
+      marker.bindTooltip(`${isFav ? "★ " : ""}${scoreText} · ${tumText}`, { direction: "top" });
       marker.bindPopup(popupHtml(listing));
       marker.addTo(map);
       bounds.push([listing.lat, listing.lon]);

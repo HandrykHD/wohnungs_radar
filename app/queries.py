@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from sqlmodel import Session, col, select
 
 from app.config import Config
@@ -70,22 +70,27 @@ def build_query(filters: ListingFilters):
     if filters.only_favorites:
         statement = statement.where(Listing.status == ListingStatus.FAVORISIERT)
 
+    # Kriterien (Miete, Größe, Fahrzeit, Stadtteil) werden gesammelt und am Ende
+    # mit "ODER Favorit" verknüpft: ein bewusst markierter Favorit soll nie
+    # durch die Suchfilter aus Tabelle oder Karte verschwinden.
+    criteria = []
+
     if filters.max_rent is not None:
         # Angebote ohne Mietangabe werden NICHT weggefiltert — lieber ein
         # unvollständiges Angebot zeigen als einen Treffer verpassen.
-        statement = statement.where(
+        criteria.append(
             or_(col(Listing.rent_warm).is_(None), col(Listing.rent_warm) <= filters.max_rent)
         )
 
     if filters.min_size is not None:
-        statement = statement.where(
+        criteria.append(
             or_(col(Listing.size_sqm).is_(None), col(Listing.size_sqm) >= filters.min_size)
         )
 
     if filters.max_transit_minutes is not None:
         # Noch nicht angereicherte Angebote (transit_minutes = NULL) bleiben
         # sichtbar, sonst wäre die Tabelle bis zum ersten Enrichment-Lauf leer.
-        statement = statement.where(
+        criteria.append(
             or_(
                 col(Listing.transit_minutes).is_(None),
                 col(Listing.transit_minutes) <= filters.max_transit_minutes,
@@ -94,7 +99,12 @@ def build_query(filters: ListingFilters):
 
     if filters.districts:
         district_clauses = [col(Listing.district).ilike(f"%{name}%") for name in filters.districts]
-        statement = statement.where(or_(col(Listing.district).is_(None), or_(*district_clauses)))
+        criteria.append(or_(col(Listing.district).is_(None), or_(*district_clauses)))
+
+    if criteria:
+        statement = statement.where(
+            or_(Listing.status == ListingStatus.FAVORISIERT, and_(*criteria))
+        )
 
     if filters.listing_type:
         statement = statement.where(Listing.listing_type == filters.listing_type)

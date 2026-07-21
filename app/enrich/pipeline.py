@@ -14,6 +14,7 @@ import httpx
 from sqlmodel import Session, col, select
 
 from app.config import Config
+from app.db import session_scope
 from app.enrich.cache import cache_get, cache_set
 from app.enrich.geocode import geocode
 from app.enrich.pois import nearby_pois
@@ -114,6 +115,38 @@ async def enrich_listing(
     listing.enriched_at = utcnow()
     session.add(listing)
     return True
+
+
+async def enrich_one(config: Config, listing_id: int) -> bool:
+    """Ein einzelnes Angebot sofort anreichern (z.B. frisch markierter Favorit).
+
+    Läuft als eigener Hintergrund-Task außerhalb der normalen Warteschlange,
+    damit ein Favorit nicht hinter hunderten unbearbeiteten Angeboten wartet,
+    sondern direkt Koordinaten (→ Karte), Score und TUM-Zeit bekommt.
+
+    Returns:
+        ``True``, wenn das Angebot (jetzt oder schon vorher) angereichert ist.
+    """
+    try:
+        with session_scope() as session:
+            listing = session.get(Listing, listing_id)
+            if listing is None:
+                return False
+            if listing.enriched_at is not None:
+                return True
+
+            async with httpx.AsyncClient(
+                headers=config.http_headers(),
+                timeout=config.scraping.request_timeout_seconds,
+                follow_redirects=True,
+            ) as client:
+                campus = await resolve_campus(session, client, config)
+                done = await enrich_listing(session, client, config, listing, campus)
+            session.commit()
+            return done
+    except Exception:
+        logger.exception("Sofort-Anreicherung für Angebot %s fehlgeschlagen", listing_id)
+        return False
 
 
 def _pending_query(limit: int):

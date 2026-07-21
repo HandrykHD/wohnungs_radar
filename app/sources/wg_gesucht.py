@@ -128,6 +128,20 @@ def _split_location(raw: str | None) -> tuple[str | None, str | None]:
     return district, street
 
 
+def _build_address(street: str | None, district: str | None) -> str | None:
+    """Geocodierbare Adresse aus Straße/Stadtteil bauen.
+
+    Lange Straßennamen kürzt die WG-Gesucht-Listenseite mit ``…``/``...`` ab. So
+    ein Torso (``"Johann-Sebastian-Bach-Str…"``) ist für Nominatim unbrauchbar →
+    dann lieber den zuverlässig geparsten Stadtteil nehmen, das liefert
+    wenigstens einen Viertel-Mittelpunkt für Score und TUM-Fahrzeit.
+    """
+    if street and ("…" in street or "..." in street):
+        street = None
+    location = street or district
+    return f"{location}, München" if location else None
+
+
 class WgGesuchtSource(SourceAdapter):
     """Sammelt WG-Zimmer und Wohnungen aus der WG-Gesucht-Münchensuche."""
 
@@ -228,7 +242,7 @@ class WgGesuchtSource(SourceAdapter):
             available_from = _parse_available_from(_node_text(middle, "div.col-xs-5"))
 
         district, street = _split_location(_node_text(card, "div.col-xs-11 span"))
-        address = f"{street}, München" if street else None
+        address = _build_address(street, district)
 
         return Listing(
             fingerprint=make_fingerprint(self.name, url, external_id),
