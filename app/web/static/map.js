@@ -36,11 +36,43 @@
       `<b>${escapeHtml(listing.title)}</b><br>` +
       `${rent}${size}<br>` +
       `${escapeHtml(listing.district || "")}${transit}${car}${score}<br>` +
-      `<a href="${escapeHtml(listing.url)}" target="_blank" rel="noopener">Im Portal öffnen ↗</a>`
+      `<a href="${escapeHtml(listing.url)}" target="_blank" rel="noopener">Im Portal öffnen ↗</a>` +
+      ` · <button type="button" class="map-hide" data-id="${listing.id}">✕ Ausblenden</button>`
     );
   }
 
-  async function loadListings(map) {
+  // Ausblenden aus dem Popup: Status setzen (wie in der Tabelle), Marker weg.
+  function wireHideButtons(map, markersById) {
+    document.addEventListener("click", async (event) => {
+      const btn = event.target.closest(".map-hide");
+      if (!btn) return;
+      btn.disabled = true;
+      try {
+        const response = await fetch(`/api/listings/${btn.dataset.id}/status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "status=ausgeblendet",
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      } catch (error) {
+        console.error("Ausblenden fehlgeschlagen:", error);
+        btn.disabled = false;
+        return;
+      }
+      const marker = markersById[btn.dataset.id];
+      if (marker) {
+        marker.closePopup();
+        map.removeLayer(marker);
+        delete markersById[btn.dataset.id];
+      }
+      const counter = document.getElementById("map-count");
+      if (counter) {
+        counter.textContent = `· ${Object.keys(markersById).length} Angebote auf der Karte`;
+      }
+    });
+  }
+
+  async function loadListings(map, markersById) {
     let listings = [];
     try {
       const response = await fetch("/api/listings");
@@ -73,6 +105,7 @@
       marker.bindTooltip(`${isFav ? "★ " : ""}${scoreText} · ${tumText}`, { direction: "top" });
       marker.bindPopup(popupHtml(listing));
       marker.addTo(map);
+      markersById[listing.id] = marker;
       bounds.push([listing.lat, listing.lon]);
     }
 
@@ -114,8 +147,10 @@
       attribution: "© OpenStreetMap-Mitwirkende",
     }).addTo(map);
 
-    const bounds = (await loadListings(map)) || [];
+    const markersById = {};
+    const bounds = (await loadListings(map, markersById)) || [];
     addCampusMarkers(map, bounds);
+    wireHideButtons(map, markersById);
 
     // Kartenausschnitt an alle Marker anpassen, falls vorhanden.
     if (bounds.length > 0) {

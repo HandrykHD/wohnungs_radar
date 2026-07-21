@@ -207,6 +207,20 @@ tr.status-favorisiert { background: color-mix(in srgb, var(--fav) 10%, transpare
   background: hsl(calc(var(--score) * 1.2) 65% 72%);
 }
 
+/* Ausblenden-Button im Karten-Popup (helles Leaflet-Popup, daher eigene Farben) */
+.map-hide {
+  font: inherit;
+  font-size: 0.85em;
+  padding: 0 0.3rem;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  background: #f4f4f4;
+  color: #444;
+  cursor: pointer;
+}
+.map-hide:hover { background: #e6e6e6; }
+.map-hide:disabled { opacity: 0.5; cursor: wait; }
+
 /* --- Badges & Buttons --- */
 
 .badge {
