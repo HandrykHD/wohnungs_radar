@@ -95,6 +95,24 @@ gelegentlich neu.
 
 ---
 
+## 4. FlatsForFriendz — geprüft und NICHT eingebaut
+
+- **URL:** https://app.flatsforfriendz.com
+- **Offizielle API:** Keine öffentliche vorhanden.
+- **`robots.txt` (geprüft 21.07.2026):** `Disallow: /api/` und
+  `Disallow: /listing/search/` — sowohl die interne API als auch die Suchseite
+  sind für Crawler ausdrücklich gesperrt.
+- **Sitemap:** Enthält nur statische Seiten (Terms, Privacy, Settings),
+  **keine Angebots-URLs** — es gibt keinen eingeladenen Crawl-Pfad zu Inhalten.
+- **Zugang:** Next.js-SPA; die Startseite liefert kein Angebots-HTML, Inhalte
+  erscheinen erst nach Login (Account-Pflicht).
+- **Fazit:** Jeder technische Weg an die Angebote (interne API, Suchseite,
+  Headless-Login) verstieße gegen robots.txt und absehbar gegen die AGB.
+  **Quelle wird daher nicht angebunden.** Falls der Betreiber auf Anfrage
+  API-Zugang oder Erlaubnis erteilt, ist ein Adapter schnell nachgerüstet.
+
+---
+
 ## Gemeinsame Schutzmaßnahmen im Code
 
 Alle Adapter erben von `app/sources/base.py::SourceAdapter` und nutzen den
