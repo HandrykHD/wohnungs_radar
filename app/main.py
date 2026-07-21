@@ -23,7 +23,7 @@ from app.models import Listing, ListingStatus, utcnow
 from app.notify.browser import drain_pending
 from app.notify.dispatch import record_heartbeat
 from app.queries import DEFAULT_SORT, ListingFilters, fetch_listings
-from app.scheduler import CollectorScheduler
+from app.scheduler import CollectorScheduler, run_off_loop
 
 logger = logging.getLogger(__name__)
 
@@ -270,9 +270,10 @@ async def set_listing_status(
     session.refresh(listing)
 
     # Frischer Favorit ohne Anreicherung: sofort geocodieren, damit er direkt
-    # auf der Karte erscheint, statt in der Warteschlange zu warten.
+    # auf der Karte erscheint, statt in der Warteschlange zu warten. Off-Loop,
+    # damit seine DB-Sperren nie mit Web-Requests im Event-Loop verklemmen.
     if new_status == ListingStatus.FAVORISIERT and listing.enriched_at is None:
-        asyncio.create_task(enrich_one(get_config(), listing.id))
+        asyncio.create_task(run_off_loop(enrich_one(get_config(), listing.id)))
 
     return templates.TemplateResponse(
         request=request,

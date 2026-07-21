@@ -28,6 +28,19 @@ logger = logging.getLogger(__name__)
 #: ein Job nicht den nächsten Sammel-Lauf endlos verdrängt.
 _ENRICH_TIME_BUDGET_SECONDS = 20 * 60
 
+async def run_off_loop(coro) -> object:
+    """Eine Pipeline-Coroutine in einem eigenen Thread mit eigenem Event-Loop fahren.
+
+    Sammel-/Anreicherungsläufe machen synchrone SQLite-Zugriffe. Liefen sie im
+    Haupt-Event-Loop, entsteht ein Selbst-Deadlock: Ein Web-Request wartet
+    synchron auf die Schreibsperre und blockiert dabei den einzigen Thread — der
+    Sperrenhalter (eine andere Coroutine) kann nie committen und freigeben, bis
+    das busy_timeout zuschlägt ("database is locked"). In einem eigenen Thread
+    läuft der Halter parallel weiter und gibt die Sperre nach Millisekunden frei.
+    """
+    return await asyncio.to_thread(asyncio.run, coro)
+
+
 #: Host für den Konnektivitätstest. Antwortet mit HTTP 204 ohne Body und wird
 #: nicht durch Captive Portals verfälscht.
 _CONNECTIVITY_URL = "https://connectivitycheck.gstatic.com/generate_204"
@@ -203,7 +216,7 @@ class CollectorScheduler:
     async def _run_job(self) -> None:
         """Job-Wrapper — fängt alles ab, damit der Scheduler nie stirbt."""
         try:
-            await collect_once(self._config)
+            await run_off_loop(collect_once(self._config))
         except Exception:
             logger.exception("Sammel-Lauf mit unerwartetem Fehler abgebrochen")
 
@@ -215,10 +228,10 @@ class CollectorScheduler:
         nicht minutenlang blockiert. Ein bereits laufender Anreicherungs-Task wird
         nicht ein zweites Mal gestartet.
         """
-        stats = await scrape_only(self._config)
+        stats = await run_off_loop(scrape_only(self._config))
 
         if stats.get("online") and (self._enrich_task is None or self._enrich_task.done()):
-            self._enrich_task = asyncio.create_task(enrich_and_notify(self._config))
+            self._enrich_task = asyncio.create_task(run_off_loop(enrich_and_notify(self._config)))
 
         return stats
 

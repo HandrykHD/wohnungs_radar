@@ -36,6 +36,23 @@ def setup_logging(log_path: Path, level: str = "INFO") -> None:
     file_handler.setFormatter(formatter)
     root.addHandler(file_handler)
 
+    # Nur-Fehler-Datei: sammelt ERROR+ (inkl. voller Tracebacks) kompakt an
+    # einem Ort — zum Melden/Debuggen reicht dann diese eine Datei.
+    error_handler = RotatingFileHandler(
+        log_path.with_name("errors.log"), maxBytes=2_000_000, backupCount=2, encoding="utf-8"
+    )
+    error_handler.setFormatter(formatter)
+    error_handler.setLevel(logging.ERROR)
+    root.addHandler(error_handler)
+
+    # uvicorn loggt standardmäßig an eigenen Handlern vorbei (nur stderr) —
+    # umleiten auf den Root-Logger, damit ASGI-Tracebacks auch in den Log-Dateien
+    # landen und nicht nur im Terminal.
+    for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        uv_logger = logging.getLogger(name)
+        uv_logger.handlers.clear()
+        uv_logger.propagate = True
+
     # APScheduler protokolliert jeden Job-Start auf INFO — bei 15-Minuten-Takt
     # ist das nur Rauschen.
     logging.getLogger("apscheduler").setLevel(logging.WARNING)
