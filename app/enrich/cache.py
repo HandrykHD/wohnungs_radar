@@ -33,14 +33,18 @@ def cache_get(session: Session, kind: str, key: str, ttl_days: int) -> Any | Non
         Das deserialisierte JSON oder ``None`` bei Fehltreffer/Ablauf.
     """
     full_key = f"{kind}:{key}"
-    row = session.exec(select(GeoCache).where(GeoCache.cache_key == full_key)).first()
+    # no_autoflush: das SELECT darf nicht nebenbei geänderte Listing-Felder
+    # flushen — das nähme die SQLite-Schreibsperre schon VOR dem folgenden
+    # (langsamen) Netz-Aufruf. Geflusht wird erst beim nächsten Commit.
+    with session.no_autoflush:
+        row = session.exec(select(GeoCache).where(GeoCache.cache_key == full_key)).first()
     if row is None:
         return None
 
     if utcnow() - row.created_at > timedelta(days=ttl_days):
         # Abgelaufen: löschen, damit er neu geholt wird.
         session.delete(row)
-        session.flush()
+        session.commit()
         return None
 
     try:
@@ -48,7 +52,7 @@ def cache_get(session: Session, kind: str, key: str, ttl_days: int) -> Any | Non
     except json.JSONDecodeError:
         logger.warning("Beschädigter Cache-Eintrag %s — wird verworfen", full_key)
         session.delete(row)
-        session.flush()
+        session.commit()
         return None
 
 
@@ -69,4 +73,9 @@ def cache_set(session: Session, kind: str, key: str, payload: Any) -> None:
         row.payload_json = serialized
         row.created_at = utcnow()
         session.add(row)
-    session.flush()
+    # Sofort committen statt nur flushen: ein Flush nimmt die SQLite-Schreibsperre
+    # und hielte sie bis zum Commit des Aufrufers — bei der Anreicherung quer über
+    # sekundenlange Netz-Aufrufe (Overpass-Retries!). Das blockierte parallele
+    # Web-Requests bis zum "database is locked". Ein Cache-Eintrag ist ein
+    # unabhängiger Fakt; ihn früh zu committen ist immer korrekt.
+    session.commit()
