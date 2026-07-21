@@ -151,6 +151,9 @@ server:
   # SQLite-Datei. Hinweis: Auf /mnt/c (Windows-Laufwerk unter WSL2) kann SQLite
   # durch DrvFs-Dateisperren langsam werden. Bei Problemen auf einen reinen
   # Linux-Pfad umstellen, z.B. "~/.local/share/wohnungsradar/wohnungsradar.db".
-  database_path: "data/wohnungsradar.db"
+  # WICHTIG: DB auf dem Linux-Dateisystem (ext4), NICHT unter /mnt/c! Auf dem
+  # DrvFs/9p-Dateisystem von WSL2 sind SQLite-Locks und fsyncs so langsam, dass
+  # parallele Schreibzugriffe (Scheduler + Web-UI) in "database is locked" laufen.
+  database_path: "~/.local/share/wohnungsradar/wohnungsradar.db"
   log_path: "logs/wohnungsradar.log"
   log_level: "INFO"
