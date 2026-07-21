@@ -37,9 +37,10 @@
         {%- if listing.transit_changes %} ({{ listing.transit_changes }}×){% endif %}
       </div>
     {% endif %}
+    {% if listing.car_minutes %}<div>🚗 {{ listing.car_minutes|round|int }} min</div>{% endif %}
     {% if listing.bike_minutes %}<div>🚲 {{ listing.bike_minutes|round|int }} min</div>{% endif %}
     {% if listing.walk_minutes %}<div>🚶 {{ listing.walk_minutes|round|int }} min</div>{% endif %}
-    {% if not (listing.transit_minutes or listing.bike_minutes or listing.walk_minutes) %}
+    {% if not (listing.transit_minutes or listing.car_minutes or listing.bike_minutes or listing.walk_minutes) %}
       <span class="muted">—</span>
     {% endif %}
     {# Google-Maps-Route Wohnung → TUM (Live-ÖPNV-Zeiten, ohne API-Key). #}

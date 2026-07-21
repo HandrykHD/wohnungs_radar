@@ -29,11 +29,13 @@
         ? `<br>🚇 ${Math.round(listing.transit_minutes)} min zur TUM` +
           (listing.transit_summary ? ` (${escapeHtml(listing.transit_summary)})` : "")
         : "";
+    const car =
+      listing.car_minutes != null ? `<br>🚗 ${Math.round(listing.car_minutes)} min zur TUM` : "";
     const score = listing.score != null ? `<br>Score ${Math.round(listing.score)}` : "";
     return (
       `<b>${escapeHtml(listing.title)}</b><br>` +
       `${rent}${size}<br>` +
-      `${escapeHtml(listing.district || "")}${transit}${score}<br>` +
+      `${escapeHtml(listing.district || "")}${transit}${car}${score}<br>` +
       `<a href="${escapeHtml(listing.url)}" target="_blank" rel="noopener">Im Portal öffnen ↗</a>`
     );
   }

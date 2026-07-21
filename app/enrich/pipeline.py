@@ -18,7 +18,7 @@ from app.db import session_scope
 from app.enrich.cache import cache_get, cache_set
 from app.enrich.geocode import geocode
 from app.enrich.pois import nearby_pois
-from app.enrich.routing import route_foot_bike
+from app.enrich.routing import route_car, route_foot_bike
 from app.enrich.scoring import compute_score
 from app.enrich.transit import transit_to_campus
 from app.models import Listing, utcnow
@@ -93,6 +93,10 @@ async def enrich_listing(
         listing.distance_km_crow = route.distance_km_crow
         listing.walk_minutes = route.walk_minutes
         listing.bike_minutes = route.bike_minutes
+
+        car = await route_car(session, client, config, origin, campus)
+        if car is not None:
+            listing.car_minutes = car
 
         transit = await transit_to_campus(session, client, config, origin, campus)
         if transit is not None:

@@ -82,6 +82,44 @@ async def route_foot_bike(
     )
 
 
+async def route_car(
+    session: Session,
+    client: httpx.AsyncClient,
+    config: Config,
+    origin: tuple[float, float],
+    destination: tuple[float, float],
+) -> float | None:
+    """Autofahrzeit über den öffentlichen OSRM-Demo-Server (mit Cache).
+
+    Der Demo-Server hat genau das Auto-Profil geladen — für Fuß/Rad unbrauchbar
+    (siehe Modul-Docstring), fürs Auto aber die korrekte, kostenlose Quelle.
+
+    Returns:
+        Fahrzeit in Minuten oder ``None`` bei Fehler (wird nicht gecacht, damit
+        der nächste Lauf es erneut versucht).
+    """
+    key = f"{origin[0]:.5f},{origin[1]:.5f}->{destination[0]:.5f},{destination[1]:.5f}"
+    cached = cache_get(session, "car", key, config.geo.cache_ttl_days)
+    if cached is not None:
+        return cached["minutes"] if cached.get("ok") else None
+
+    url = (
+        f"{config.geo.osrm_url}/route/v1/driving/"
+        f"{origin[1]},{origin[0]};{destination[1]},{destination[0]}"  # lon,lat!
+    )
+    try:
+        response = await client.get(url, params={"overview": "false"})
+        response.raise_for_status()
+        duration_s = response.json()["routes"][0]["duration"]
+    except (httpx.HTTPError, KeyError, IndexError, ValueError) as exc:
+        logger.warning("OSRM-Autorouting fehlgeschlagen: %s", exc)
+        return None
+
+    minutes = round(duration_s / 60.0, 1)
+    cache_set(session, "car", key, {"ok": True, "minutes": minutes})
+    return minutes
+
+
 async def _route_via_ors(
     session: Session,
     client: httpx.AsyncClient,

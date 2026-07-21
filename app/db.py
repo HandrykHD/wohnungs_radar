@@ -49,6 +49,14 @@ def init_engine(database_path: Path) -> Engine:
     event.listen(engine, "connect", _configure_sqlite)
     SQLModel.metadata.create_all(engine)
 
+    # Mini-Migration: create_all legt nur fehlende Tabellen an, keine Spalten.
+    # Nachträglich ergänzte Listing-Spalten hier per ALTER TABLE nachziehen.
+    with engine.connect() as conn:
+        existing = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(listing)")}
+        if "car_minutes" not in existing:
+            conn.exec_driver_sql("ALTER TABLE listing ADD COLUMN car_minutes FLOAT")
+            conn.commit()
+
     _engine = engine
     logger.info("Datenbank bereit: %s", database_path)
     return engine

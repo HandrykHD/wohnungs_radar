@@ -122,6 +122,7 @@ class Listing(SQLModel, table=True):
     distance_km_crow: float | None = None  # Luftlinie
     walk_minutes: float | None = None
     bike_minutes: float | None = None
+    car_minutes: float | None = None
     transit_minutes: float | None = None
     transit_changes: int | None = None
     transit_summary: str | None = None  # z.B. "U6 → Bus 230, 2x umsteigen"
