@@ -15,6 +15,7 @@ from typing import Any
 
 from sqlmodel import Session, select
 
+from app.db import begin_write
 from app.models import GeoCache, utcnow
 
 logger = logging.getLogger(__name__)
@@ -64,6 +65,12 @@ def cache_set(session: Session, kind: str, key: str, payload: Any) -> None:
     eine erfolglose, aber teure Abfrage nicht bei jedem Lauf wiederholt.
     """
     full_key = f"{kind}:{key}"
+    # Schreibsperre sofort nehmen: Die Session steht hier meist in einer
+    # Lese-Transaktion, die während des vorausgegangenen Netz-Aufrufs geöffnet
+    # wurde. Ein SELECT→UPDATE-Upgrade scheitert sofort, sobald parallel
+    # (Requests, andere Pipeline-Threads) committet wurde — begin_write
+    # startet stattdessen frisch mit Schreibsperre und busy_timeout wirkt.
+    begin_write(session)
     row = session.exec(select(GeoCache).where(GeoCache.cache_key == full_key)).first()
     serialized = json.dumps(payload, ensure_ascii=False)
 

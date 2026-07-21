@@ -11,7 +11,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app.config import Config
-from app.db import session_scope, set_state, upsert_listing
+from app.db import begin_write, session_scope, set_state, upsert_listing
 from app.enrich.pipeline import enrich_pending
 from app.models import Listing, utcnow
 from app.notify.dispatch import dispatch_notifications
@@ -91,6 +91,9 @@ async def scrape_only(config: Config) -> dict[str, int]:
 
     with session_scope() as session:
         for listing in fetched:
+            # Schreibsperre pro Upsert sofort nehmen (statt SELECT→UPDATE-
+            # Upgrade, das an parallelen Commits sofort scheitern kann).
+            begin_write(session)
             _, is_new = upsert_listing(session, listing)
             if is_new:
                 new_count += 1

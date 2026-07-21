@@ -10,6 +10,7 @@ from pathlib import Path
 
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import OperationalError
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from app.models import AppState, Listing, ListingStatus, utcnow
@@ -32,6 +33,30 @@ def _configure_sqlite(dbapi_connection, _connection_record) -> None:
     cursor.execute("PRAGMA busy_timeout=5000")
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
+
+
+def begin_write(session: Session) -> None:
+    """Die kommende Transaktion sofort als Schreibtransaktion beginnen.
+
+    SQLite startet Transaktionen standardmäßig lesend (Snapshot) und muss beim
+    ersten UPDATE auf die Schreibsperre *upgraden*. Hat zwischen SELECT und
+    UPDATE ein anderer Thread committet (die Anreicherung committet im
+    Sekundentakt), schlägt das Upgrade SOFORT mit "database is locked" fehl —
+    busy_timeout greift bei diesem Fehlertyp nicht (SQLITE_BUSY_SNAPSHOT).
+
+    Lösung: vor kurzen Lese-dann-Schreib-Abschnitten die Schreibsperre per
+    BEGIN IMMEDIATE gleich zu Beginn nehmen; dann wartet busy_timeout wieder
+    brav. WICHTIG: nur unmittelbar vor kurzen Schreibabschnitten aufrufen —
+    nie vor langsamen Netz-Aufrufen, sonst wird die Sperre sekundenlang gehalten.
+    """
+    session.commit()  # evtl. offene Lese-Transaktion beenden (frischer Snapshot)
+    try:
+        session.connection().exec_driver_sql("BEGIN IMMEDIATE")
+    except OperationalError:
+        # Sperre war >busy_timeout belegt (seltene Stoßzeit) — einmal neu
+        # ansetzen, das verdoppelt die Wartetoleranz auf ~10s.
+        session.rollback()
+        session.connection().exec_driver_sql("BEGIN IMMEDIATE")
 
 
 def init_engine(database_path: Path) -> Engine:
@@ -84,8 +109,14 @@ def session_scope() -> Iterator[Session]:
 
 
 def get_session() -> Iterator[Session]:
-    """FastAPI-Dependency: Session pro Request."""
+    """FastAPI-Dependency: Session pro Request.
+
+    Requests schreiben fast immer (Heartbeat, Statuswechsel, last_visit) und
+    sind kurz — daher Schreibsperre sofort nehmen (siehe :func:`begin_write`),
+    statt beim SELECT→UPDATE-Upgrade an parallelen Pipeline-Commits zu scheitern.
+    """
     with Session(get_engine()) as session:
+        begin_write(session)
         yield session
 
 

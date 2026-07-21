@@ -13,6 +13,7 @@ from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.exc import OperationalError
 from sqlmodel import Session, select
 
 from app.config import Config, get_config
@@ -298,8 +299,14 @@ async def api_heartbeat(session: SessionDep, visible: bool = Query(True)) -> Res
     Steuert die Kanalwahl: Bei frischem Heartbeat und sichtbarer Seite gehen neue
     Treffer als Browser-Notification, sonst als Desktop-Toast.
     """
-    record_heartbeat(session, visible)
-    session.commit()
+    # Best effort: Ein Heartbeat ist ein Lebenszeichen, kein kritischer Schreib-
+    # vorgang. Erwischt er eine seltene Sperren-Stoßzeit, wird er still
+    # verworfen — der nächste kommt in wenigen Sekunden.
+    try:
+        record_heartbeat(session, visible)
+        session.commit()
+    except OperationalError:
+        session.rollback()
     return Response(status_code=204)
 
 
