@@ -83,6 +83,12 @@ async def scrape_only(config: Config) -> dict[str, int]:
                 new_count += 1
             else:
                 updated_count += 1
+            # Pro Angebot committen: Eine Sammel-Transaktion über ~270 Upserts
+            # hielt die SQLite-Schreibsperre sekundenlang (plus O(n²)-Autoflush
+            # über die wachsende Dirty-Menge) — parallele Web-Requests liefen
+            # damit ins "database is locked". So bleibt das Sperrfenster bei
+            # Millisekunden pro Angebot.
+            session.commit()
         set_state(session, "last_run_at", utcnow().isoformat())
 
     logger.info(
