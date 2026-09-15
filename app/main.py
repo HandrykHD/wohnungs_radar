@@ -88,6 +88,7 @@ def _filters_from_query(
     config: Config,
     max_rent: float | None,
     min_size: float | None,
+    min_rooms: float | None,
     districts: str | None,
     max_transit: int | None,
     listing_type: str | None,
@@ -104,6 +105,7 @@ def _filters_from_query(
     return ListingFilters(
         max_rent=max_rent if max_rent is not None else defaults.max_rent,
         min_size=min_size if min_size is not None else defaults.min_size,
+        min_rooms=min_rooms,
         districts=(
             [part.strip() for part in districts.split(",") if part.strip()]
             if districts is not None
@@ -129,6 +131,7 @@ async def index(
     session: SessionDep,
     max_rent: float | None = Query(None),
     min_size: float | None = Query(None),
+    min_rooms: float | None = Query(None),
     districts: str | None = Query(None),
     max_transit: int | None = Query(None),
     listing_type: str | None = Query(None),
@@ -141,6 +144,7 @@ async def index(
         config,
         max_rent,
         min_size,
+        min_rooms,
         districts,
         max_transit,
         listing_type,
@@ -199,6 +203,7 @@ async def listings_partial(
     session: SessionDep,
     max_rent: float | None = Query(None),
     min_size: float | None = Query(None),
+    min_rooms: float | None = Query(None),
     districts: str | None = Query(None),
     max_transit: int | None = Query(None),
     listing_type: str | None = Query(None),
@@ -211,6 +216,7 @@ async def listings_partial(
         config,
         max_rent,
         min_size,
+        min_rooms,
         districts,
         max_transit,
         listing_type,
@@ -234,12 +240,13 @@ async def api_listings(
     session: SessionDep,
     max_rent: float | None = Query(None),
     min_size: float | None = Query(None),
+    min_rooms: float | None = Query(None),
     sort: str = Query(DEFAULT_SORT),
     include_hidden: bool = Query(False),
 ) -> list[Listing]:
     """Angebote als JSON (für Kartenansicht und externe Nutzung)."""
     filters = _filters_from_query(
-        config, max_rent, min_size, None, None, None, sort, False, include_hidden
+        config, max_rent, min_size, min_rooms, None, None, None, sort, False, include_hidden
     )
     return fetch_listings(session, filters)
 
@@ -329,3 +336,5 @@ async def health() -> dict[str, object]:
         "last_run_at": last_run,
         "scheduler_running": scheduler is not None,
     }
+
+

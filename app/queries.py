@@ -34,6 +34,7 @@ class ListingFilters:
 
     max_rent: float | None = None
     min_size: float | None = None
+    min_rooms: float | None = None
     districts: list[str] | None = None
     max_transit_minutes: int | None = None
     listing_type: str | None = None
@@ -85,6 +86,11 @@ def build_query(filters: ListingFilters):
     if filters.min_size is not None:
         criteria.append(
             or_(col(Listing.size_sqm).is_(None), col(Listing.size_sqm) >= filters.min_size)
+        )
+
+    if filters.min_rooms is not None:
+        criteria.append(
+            or_(col(Listing.rooms).is_(None), col(Listing.rooms) >= filters.min_rooms)
         )
 
     if filters.max_transit_minutes is not None:
@@ -158,3 +164,5 @@ def matches_config_criteria(listing: Listing, config: Config) -> bool:
             return False
 
     return True
+
+

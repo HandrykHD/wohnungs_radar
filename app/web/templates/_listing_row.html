@@ -25,7 +25,10 @@
 
   <td class="numeric">
     {% if listing.size_sqm %}{{ listing.size_sqm|round|int }} m²{% else %}—{% endif %}
-    {% if listing.rooms %}<div class="muted small">{{ listing.rooms|round(1) }} Zi.</div>{% endif %}
+  </td>
+
+  <td class="numeric">
+    {% if listing.rooms %}{{ listing.rooms|round(1) }}{% else %}—{% endif %}
   </td>
 
   <td>{{ listing.district or '—' }}</td>
@@ -90,3 +93,4 @@
        title="Im Portal öffnen">↗</a>
   </td>
 </tr>
+

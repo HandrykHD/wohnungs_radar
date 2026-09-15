@@ -17,6 +17,7 @@ def _listing(url: str, **overrides) -> Listing:
         "listing_type": ListingType.WG_ROOM,
         "rent_warm": 650.0,
         "size_sqm": 18.0,
+        "rooms": 1.0,
         "district": "Schwabing",
     }
     data.update(overrides)
@@ -45,6 +46,7 @@ def test_favorit_ueberlebt_alle_suchfilter(engine) -> None:  # noqa: ANN001
             min_size=15,
             districts=["Schwabing"],
             max_transit_minutes=40,
+            min_rooms=2,
         )
         urls = [listing.url for listing in fetch_listings(session, filters)]
 
@@ -58,3 +60,21 @@ def test_ausgeblendet_bleibt_ausgeblendet(engine) -> None:  # noqa: ANN001
         session.add(_listing("https://example.com/weg", status=ListingStatus.AUSGEBLENDET))
         session.commit()
         assert fetch_listings(session, ListingFilters()) == []
+
+def test_min_rooms_filtert_nur_bekannte_zimmerzahlen(engine) -> None:  # noqa: ANN001
+    with Session(engine) as session:
+        session.add(_listing("https://example.com/eins", rooms=1.0))
+        session.add(_listing("https://example.com/zwei", rooms=2.0))
+        session.add(_listing("https://example.com/unbekannt", rooms=None))
+        session.commit()
+
+        urls = [
+            listing.url
+            for listing in fetch_listings(session, ListingFilters(min_rooms=2.0))
+        ]
+
+    assert "https://example.com/eins" not in urls
+    assert "https://example.com/zwei" in urls
+    assert "https://example.com/unbekannt" in urls
+
+

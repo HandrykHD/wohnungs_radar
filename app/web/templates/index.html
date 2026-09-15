@@ -28,6 +28,12 @@
   </label>
 
   <label>
+    Min. Zimmer
+    <input type="number" name="min_rooms" min="0" step="0.5"
+           value="{{ filters.min_rooms|round(1) if filters.min_rooms else '' }}">
+  </label>
+
+  <label>
     Max. ÖPNV zur TUM (min)
     <input type="number" name="max_transit" min="0" step="5"
            value="{{ filters.max_transit_minutes or '' }}">
@@ -81,6 +87,7 @@
       <th>Titel</th>
       <th>Miete</th>
       <th>Größe</th>
+      <th>Zimmer</th>
       <th>Stadtteil</th>
       <th title="ÖPNV / Auto / Rad / Fuß zur TUM Garching">Zur TUM</th>
       <th title="Supermarkt / Apotheke / Haltestelle">Umgebung</th>
@@ -94,3 +101,6 @@
   </tbody>
 </table>
 {% endblock %}
+
+
+
